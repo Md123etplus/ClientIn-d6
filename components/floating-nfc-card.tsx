@@ -1,151 +1,122 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { motion, useMotionValue, useTransform, type PanInfo } from "framer-motion"
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Wifi, User, Building, Calendar } from "lucide-react"
 
 export function FloatingNFCCard() {
+  const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
-  const cardRef = useRef<HTMLDivElement>(null)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 
-  const x = useMotionValue(0)
-  const y = useMotionValue(0)
-
-  const rotateX = useTransform(y, [-100, 100], [10, -10])
-  const rotateY = useTransform(x, [-100, 100], [-10, 10])
-
-  const handleDragStart = () => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true)
+    const rect = e.currentTarget.getBoundingClientRect()
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    })
   }
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    setIsDragging(false)
-    // Smooth return to center
-    x.set(0)
-    y.set(0)
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isDragging) {
+      setPosition({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y,
+      })
+    }
   }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mouseup", handleMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove)
+      document.removeEventListener("mouseup", handleMouseUp)
+    }
+  }, [isDragging, dragOffset])
 
   return (
-    <div className="fixed top-1/2 right-4 lg:right-8 xl:right-16 -translate-y-1/2 translate-y-16 z-10 pointer-events-none">
-      {/* Floating particles */}
-      <div className="absolute inset-0 pointer-events-none">
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-violet-400/30 rounded-full"
-            style={{
-              left: `${20 + i * 15}%`,
-              top: `${30 + i * 10}%`,
-            }}
-            animate={{
-              y: [-10, 10, -10],
-              opacity: [0.3, 0.8, 0.3],
-            }}
-            transition={{
-              duration: 3 + i * 0.5,
-              repeat: Number.POSITIVE_INFINITY,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </div>
-
-      {/* NFC Card */}
-      <motion.div
-        ref={cardRef}
-        className="pointer-events-auto cursor-grab active:cursor-grabbing"
-        drag
-        dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }}
-        dragElastic={0.1}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        style={{ x, y, rotateX, rotateY }}
-        whileHover={{ scale: 1.05 }}
-        whileDrag={{ scale: 1.1 }}
-        animate={{
-          y: isDragging ? 0 : [-5, 5, -5],
-        }}
-        transition={{
-          y: {
-            duration: 4,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "easeInOut",
-          },
-          scale: {
-            duration: 0.2,
-          },
-        }}
+    <div
+      className="fixed top-1/2 right-4 lg:right-8 xl:right-16 transform -translate-y-1/2 translate-y-16 z-40 cursor-move"
+      style={
+        isDragging
+          ? {
+              left: position.x,
+              top: position.y,
+              right: "auto",
+              transform: "none",
+            }
+          : {}
+      }
+      onMouseDown={handleMouseDown}
+    >
+      <Card
+        className={`w-80 bg-white/95 backdrop-blur-sm border-2 border-purple-200 shadow-2xl transition-all duration-300 ${
+          isDragging ? "scale-105 rotate-2" : "hover:scale-105 hover:shadow-purple-500/25"
+        } animate-float`}
       >
-        <div className="relative">
-          {/* Card Shadow */}
-          <motion.div
-            className="absolute inset-0 bg-black/20 rounded-xl blur-lg"
-            style={{
-              y: useTransform(y, [0, 100], [5, 15]),
-              opacity: useTransform(y, [0, 100], [0.2, 0.4]),
-            }}
-          />
-
-          {/* Main Card */}
-          <div className="relative w-64 h-40 bg-gradient-to-br from-violet-600 to-indigo-700 rounded-xl shadow-2xl overflow-hidden">
-            {/* Card Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-4 right-4 w-16 h-16 border-2 border-white rounded-full" />
-              <div className="absolute bottom-4 left-4 w-8 h-8 border border-white rounded" />
+        <CardContent className="p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <Badge className="bg-purple-600 text-white">
+              <Wifi className="w-3 h-3 mr-1" />
+              NFC ENABLED
+            </Badge>
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">CI</span>
             </div>
-
-            {/* Card Content */}
-            <div className="relative p-6 h-full flex flex-col justify-between text-white">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold text-lg">ClientIn</h3>
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                    <div className="w-4 h-4 bg-white rounded-full" />
-                  </div>
-                </div>
-                <p className="text-sm opacity-90">Employee Feedback</p>
-              </div>
-
-              <div>
-                <div className="text-xs opacity-75 mb-1">ID: EMP001</div>
-                <div className="font-semibold">Mohammed B.</div>
-                <div className="text-sm opacity-90">Serveur</div>
-              </div>
-            </div>
-
-            {/* NFC Indicator */}
-            <div className="absolute top-4 left-4">
-              <motion.div
-                className="w-6 h-6 border-2 border-white rounded-sm flex items-center justify-center"
-                animate={{
-                  scale: [1, 1.1, 1],
-                  opacity: [0.7, 1, 0.7],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "easeInOut",
-                }}
-              >
-                <div className="w-2 h-2 bg-white rounded-full" />
-              </motion.div>
-            </div>
-
-            {/* Shine Effect */}
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
-              animate={{
-                x: [-300, 300],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Number.POSITIVE_INFINITY,
-                repeatDelay: 2,
-                ease: "easeInOut",
-              }}
-            />
           </div>
-        </div>
-      </motion.div>
+
+          {/* Employee Info */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
+                <User className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">Demo Employee</h3>
+                <p className="text-sm text-gray-600">Service Representative</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="flex items-center space-x-2">
+                <Building className="w-3 h-3 text-gray-500" />
+                <span className="text-gray-600">ClientIn Corp</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Calendar className="w-3 h-3 text-gray-500" />
+                <span className="text-gray-600">ID: DEMO001</span>
+              </div>
+            </div>
+          </div>
+
+          {/* NFC Indicator */}
+          <div className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-purple-600 rounded-full animate-pulse"></div>
+              <span className="text-xs font-medium text-purple-700">Tap to give feedback</span>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse animation-delay-500"></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Floating particles */}
+      <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full opacity-60 animate-ping"></div>
+      <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-green-400 rounded-full opacity-60 animate-ping animation-delay-1000"></div>
+      <div className="absolute top-1/2 -left-4 w-2 h-2 bg-blue-400 rounded-full opacity-60 animate-ping animation-delay-2000"></div>
     </div>
   )
 }

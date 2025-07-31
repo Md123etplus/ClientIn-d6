@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import {
   QrCode,
@@ -16,38 +17,31 @@ import {
   Copy,
   Check,
   Users,
+  Home,
   MessageSquare,
-  TrendingUp,
+  BarChart3,
   Settings,
   Search,
-  Bell,
-  Moon,
-  Sun,
+  TrendingUp,
 } from "lucide-react"
-import { createClient } from "@supabase/supabase-js"
-import Link from "next/link"
 import { Logo } from "@/components/logo"
-import { useTheme } from "next-themes"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-)
+import Link from "next/link"
 
 interface Employee {
   id: string
-  name: string
+  cin_number: string
+  full_name: string
   position: string
-  department: string
-  photo_url: string
-  qr_code_id: string
-  qr_code_url: string
-  qr_code_style: {
+  department?: string
+  photo_url?: string
+  qr_code_id?: string
+  qr_code_url?: string
+  qr_code_style?: {
     color: string
     background: string
     logo: boolean
   }
-  qr_code_generated_at: string
+  qr_scans?: number
 }
 
 interface QRCodeStats {
@@ -67,19 +61,61 @@ export default function QRCodesPage() {
     logo: true,
   })
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const { theme, setTheme } = useTheme()
+  const [searchTerm, setSearchTerm] = useState("")
 
   useEffect(() => {
     fetchEmployees()
-    fetchStats()
   }, [])
 
   const fetchEmployees = async () => {
     try {
-      const { data, error } = await supabase.from("employees").select("*").order("name")
+      // Mock data - replace with actual Supabase query
+      const mockEmployees: Employee[] = [
+        {
+          id: "1",
+          cin_number: "AB123456",
+          full_name: "Mohammed Benali",
+          position: "Serveur",
+          department: "Restaurant",
+          photo_url: "/placeholder.svg?height=40&width=40",
+          qr_code_id: "QR001",
+          qr_code_url: `${window.location.origin}/feedback?id=1&source=qr`,
+          qr_code_style: { color: "#7c3aed", background: "#ffffff", logo: true },
+          qr_scans: 24,
+        },
+        {
+          id: "2",
+          cin_number: "CD789012",
+          full_name: "Sarah Khalil",
+          position: "Caissière",
+          department: "Vente",
+          photo_url: "/placeholder.svg?height=40&width=40",
+          qr_code_id: "QR002",
+          qr_code_url: `${window.location.origin}/feedback?id=2&source=qr`,
+          qr_code_style: { color: "#059669", background: "#ffffff", logo: true },
+          qr_scans: 18,
+        },
+        {
+          id: "3",
+          cin_number: "EF345678",
+          full_name: "Meriem Alami",
+          position: "Conseillère",
+          department: "Service Client",
+          photo_url: "/placeholder.svg?height=40&width=40",
+          qr_code_id: "QR003",
+          qr_code_url: `${window.location.origin}/feedback?id=3&source=qr`,
+          qr_code_style: { color: "#dc2626", background: "#ffffff", logo: true },
+          qr_scans: 31,
+        },
+      ]
 
-      if (error) throw error
-      setEmployees(data || [])
+      setEmployees(mockEmployees)
+
+      const total = mockEmployees.length
+      const scanned = mockEmployees.filter((emp) => (emp.qr_scans || 0) > 0).length
+      const generated = mockEmployees.filter((emp) => emp.qr_code_id).length
+
+      setStats({ total, scanned, generated })
     } catch (error) {
       console.error("Error fetching employees:", error)
     } finally {
@@ -87,49 +123,13 @@ export default function QRCodesPage() {
     }
   }
 
-  const fetchStats = async () => {
-    try {
-      const { data: qrData } = await supabase.from("qr_codes").select("scans_count")
-      const { data: employeeData } = await supabase.from("employees").select("qr_code_id")
-
-      if (qrData && employeeData) {
-        const total = employeeData.length
-        const scanned = qrData.filter((qr) => qr.scans_count > 0).length
-        const generated = employeeData.filter((emp) => emp.qr_code_id).length
-
-        setStats({ total, scanned, generated })
-      }
-    } catch (error) {
-      console.error("Error fetching stats:", error)
-    }
-  }
-
   const generateQRCode = (employee: Employee, style = qrStyle) => {
     const size = 300
-    const data = encodeURIComponent(employee.qr_code_url)
+    const data = encodeURIComponent(employee.qr_code_url || "")
     const color = style.color.replace("#", "")
     const bgColor = style.background.replace("#", "")
 
     return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${data}&color=${color}&bgcolor=${bgColor}&format=png&ecc=M&margin=1`
-  }
-
-  const updateQRStyle = async (employeeId: string, newStyle: typeof qrStyle) => {
-    try {
-      const { error } = await supabase
-        .from("employees")
-        .update({
-          qr_code_style: newStyle,
-          qr_code_generated_at: new Date().toISOString(),
-        })
-        .eq("id", employeeId)
-
-      if (error) throw error
-
-      // Update local state
-      setEmployees((prev) => prev.map((emp) => (emp.id === employeeId ? { ...emp, qr_code_style: newStyle } : emp)))
-    } catch (error) {
-      console.error("Error updating QR style:", error)
-    }
   }
 
   const copyToClipboard = async (text: string, id: string) => {
@@ -146,301 +146,319 @@ export default function QRCodesPage() {
     const qrUrl = generateQRCode(employee, employee.qr_code_style)
     const link = document.createElement("a")
     link.href = qrUrl
-    link.download = `qr-code-${employee.name.replace(/\s+/g, "-").toLowerCase()}.png`
+    link.download = `qr-code-${employee.full_name.replace(/\s+/g, "-").toLowerCase()}.png`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   }
 
+  const filteredEmployees = employees.filter(
+    (employee) =>
+      employee.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.cin_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.position.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des QR codes...</p>
-        </div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white">Chargement des QR codes...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Logo className="h-8 w-auto" />
-              </div>
-              <h1 className="text-xl font-semibold text-gray-900">Gestion QR Codes</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Rechercher un employé..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-                <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Bell className="w-5 h-5" />
-              </Button>
-              <div className="w-8 h-8 bg-purple-600 rounded-full"></div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Sidebar */}
+      <div className="fixed left-0 top-0 h-full w-64 bg-gray-800 p-4">
+        <div className="mb-8">
+          <Logo className="h-8 mb-2" />
         </div>
-      </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 bg-gray-900 min-h-screen">
-          <nav className="p-4 space-y-2">
-            <Link href="/dashboard">
-              <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white">
-                <TrendingUp className="w-5 h-5 mr-3" />
-                Dashboard
-              </Button>
-            </Link>
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white">
-              <Users className="w-5 h-5 mr-3" />
+        <nav className="space-y-2">
+          <Link href="/dashboard">
+            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+              <Home className="mr-3 h-4 w-4" />
+              Dashboard
+            </Button>
+          </Link>
+          <Link href="/dashboard/employees">
+            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+              <Users className="mr-3 h-4 w-4" />
               Employés
             </Button>
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white">
-              <MessageSquare className="w-5 h-5 mr-3" />
+          </Link>
+          <Link href="/dashboard/feedbacks">
+            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+              <MessageSquare className="mr-3 h-4 w-4" />
               Feedbacks
             </Button>
-            <Button variant="ghost" className="w-full justify-start text-white bg-purple-600">
-              <QrCode className="w-5 h-5 mr-3" />
-              QR Codes
-            </Button>
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white">
-              <TrendingUp className="w-5 h-5 mr-3" />
+          </Link>
+          <Button variant="ghost" className="w-full justify-start bg-purple-600 text-white hover:bg-purple-700">
+            <QrCode className="mr-3 h-4 w-4" />
+            QR Codes
+          </Button>
+          <Link href="/dashboard/insights">
+            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+              <BarChart3 className="mr-3 h-4 w-4" />
               Insight
             </Button>
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white">
-              <Settings className="w-5 h-5 mr-3" />
+          </Link>
+          <Link href="/dashboard/settings">
+            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+              <Settings className="mr-3 h-4 w-4" />
               Paramètres
             </Button>
-          </nav>
-        </aside>
+          </Link>
+        </nav>
+      </div>
 
-        {/* Main Content */}
-        <main className="flex-1 p-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">QR Codes Générés</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.generated}</p>
-                  </div>
-                  <QrCode className="w-12 h-12 text-purple-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">QR Codes Scannés</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.scanned}</p>
-                  </div>
-                  <Eye className="w-12 h-12 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Taux d'Utilisation</p>
-                    <p className="text-3xl font-bold text-gray-900">
-                      {stats.total > 0 ? Math.round((stats.scanned / stats.total) * 100) : 0}%
-                    </p>
-                  </div>
-                  <TrendingUp className="w-12 h-12 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
+      {/* Main Content */}
+      <div className="ml-64 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold">Gestion QR Codes</h1>
+            <p className="text-gray-400">Gérez les QR codes de vos employés</p>
           </div>
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Rechercher un employé..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-gray-700 border-gray-600 text-white w-64"
+              />
+            </div>
+            <Button className="bg-purple-600 hover:bg-purple-700">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Régénérer Tous
+            </Button>
+          </div>
+        </div>
 
-          {/* QR Codes Grid */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>QR Codes des Employés</span>
-                <Button>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Régénérer Tous
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {employees.map((employee) => (
-                  <Card key={employee.id} className="border-2 hover:border-purple-300 transition-colors">
-                    <CardContent className="p-6">
-                      {/* Employee Info */}
-                      <div className="flex items-center space-x-3 mb-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden">
-                          <img
-                            src={employee.photo_url || "/placeholder.svg"}
-                            alt={employee.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{employee.name}</h3>
-                          <p className="text-sm text-gray-600">{employee.position}</p>
-                        </div>
-                      </div>
-
-                      {/* QR Code Preview */}
-                      <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-200 mb-4">
-                        <div className="text-center">
-                          <img
-                            src={generateQRCode(employee, employee.qr_code_style) || "/placeholder.svg"}
-                            alt={`QR Code ${employee.name}`}
-                            className="w-32 h-32 mx-auto mb-2"
-                          />
-                          <Badge variant="outline" className="text-xs">
-                            {employee.qr_code_id}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="space-y-2">
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 bg-transparent"
-                            onClick={() => copyToClipboard(employee.qr_code_url, employee.id)}
-                          >
-                            {copiedId === employee.id ? (
-                              <Check className="w-4 h-4 mr-1" />
-                            ) : (
-                              <Copy className="w-4 h-4 mr-1" />
-                            )}
-                            {copiedId === employee.id ? "Copié!" : "URL"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 bg-transparent"
-                            onClick={() => downloadQRCode(employee)}
-                          >
-                            <Download className="w-4 h-4 mr-1" />
-                            PNG
-                          </Button>
-                        </div>
-
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="w-full"
-                              onClick={() => {
-                                setSelectedEmployee(employee)
-                                setQrStyle(employee.qr_code_style)
-                              }}
-                            >
-                              <Palette className="w-4 h-4 mr-2" />
-                              Personnaliser
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-md">
-                            <DialogHeader>
-                              <DialogTitle>Personnaliser QR Code - {selectedEmployee?.name}</DialogTitle>
-                            </DialogHeader>
-                            {selectedEmployee && (
-                              <div className="space-y-4">
-                                {/* Preview */}
-                                <div className="text-center">
-                                  <img
-                                    src={generateQRCode(selectedEmployee, qrStyle) || "/placeholder.svg"}
-                                    alt="QR Code Preview"
-                                    className="w-48 h-48 mx-auto border rounded-lg"
-                                  />
-                                </div>
-
-                                {/* Style Options */}
-                                <div className="space-y-4">
-                                  <div>
-                                    <Label htmlFor="color">Couleur du QR Code</Label>
-                                    <Input
-                                      id="color"
-                                      type="color"
-                                      value={qrStyle.color}
-                                      onChange={(e) => setQrStyle((prev) => ({ ...prev, color: e.target.value }))}
-                                      className="h-10"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label htmlFor="background">Couleur de fond</Label>
-                                    <Input
-                                      id="background"
-                                      type="color"
-                                      value={qrStyle.background}
-                                      onChange={(e) => setQrStyle((prev) => ({ ...prev, background: e.target.value }))}
-                                      className="h-10"
-                                    />
-                                  </div>
-
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="checkbox"
-                                      id="logo"
-                                      checked={qrStyle.logo}
-                                      onChange={(e) => setQrStyle((prev) => ({ ...prev, logo: e.target.checked }))}
-                                      className="rounded"
-                                    />
-                                    <Label htmlFor="logo">Inclure le logo ClientIn</Label>
-                                  </div>
-                                </div>
-
-                                {/* Actions */}
-                                <div className="flex space-x-2">
-                                  <Button
-                                    variant="outline"
-                                    className="flex-1 bg-transparent"
-                                    onClick={() => setQrStyle(selectedEmployee.qr_code_style)}
-                                  >
-                                    Annuler
-                                  </Button>
-                                  <Button
-                                    className="flex-1"
-                                    onClick={() => {
-                                      updateQRStyle(selectedEmployee.id, qrStyle)
-                                    }}
-                                  >
-                                    Sauvegarder
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm">QR Codes Générés</p>
+                  <p className="text-3xl font-bold text-white">{stats.generated}</p>
+                </div>
+                <QrCode className="w-12 h-12 text-purple-400" />
               </div>
             </CardContent>
           </Card>
-        </main>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm">QR Codes Scannés</p>
+                  <p className="text-3xl font-bold text-white">{stats.scanned}</p>
+                </div>
+                <Eye className="w-12 h-12 text-green-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm">Taux d'Utilisation</p>
+                  <p className="text-3xl font-bold text-white">
+                    {stats.total > 0 ? Math.round((stats.scanned / stats.total) * 100) : 0}%
+                  </p>
+                </div>
+                <TrendingUp className="w-12 h-12 text-blue-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* QR Codes Grid */}
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white">QR Codes des Employés</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredEmployees.map((employee) => (
+                <Card
+                  key={employee.id}
+                  className="bg-gray-700 border-gray-600 hover:border-purple-500 transition-colors"
+                >
+                  <CardContent className="p-6">
+                    {/* Employee Info */}
+                    <div className="flex items-center space-x-3 mb-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={employee.photo_url || "/placeholder.svg"} />
+                        <AvatarFallback className="bg-gray-600 text-white">
+                          {employee.full_name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-semibold text-white">{employee.full_name}</h3>
+                        <p className="text-gray-400 text-sm">{employee.position}</p>
+                        <p className="text-gray-500 text-xs">CIN: {employee.cin_number}</p>
+                      </div>
+                    </div>
+
+                    {/* QR Code Preview */}
+                    <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-500 mb-4">
+                      <div className="text-center">
+                        <img
+                          src={generateQRCode(employee, employee.qr_code_style) || "/placeholder.svg"}
+                          alt={`QR Code ${employee.full_name}`}
+                          className="w-32 h-32 mx-auto mb-2"
+                        />
+                        <Badge variant="outline" className="text-xs border-gray-400 text-gray-600">
+                          {employee.qr_code_id}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex justify-between text-sm text-gray-400 mb-4">
+                      <span>Scans: {employee.qr_scans || 0}</span>
+                      <span>Actif</span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="space-y-2">
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
+                          onClick={() => copyToClipboard(employee.qr_code_url || "", employee.id)}
+                        >
+                          {copiedId === employee.id ? (
+                            <Check className="w-4 h-4 mr-1" />
+                          ) : (
+                            <Copy className="w-4 h-4 mr-1" />
+                          )}
+                          {copiedId === employee.id ? "Copié!" : "URL"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
+                          onClick={() => downloadQRCode(employee)}
+                        >
+                          <Download className="w-4 h-4 mr-1" />
+                          PNG
+                        </Button>
+                      </div>
+
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full bg-purple-600 hover:bg-purple-700"
+                            onClick={() => {
+                              setSelectedEmployee(employee)
+                              setQrStyle(employee.qr_code_style || qrStyle)
+                            }}
+                          >
+                            <Palette className="w-4 h-4 mr-2" />
+                            Personnaliser
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md bg-gray-800 border-gray-700 text-white">
+                          <DialogHeader>
+                            <DialogTitle>Personnaliser QR Code - {selectedEmployee?.full_name}</DialogTitle>
+                          </DialogHeader>
+                          {selectedEmployee && (
+                            <div className="space-y-4">
+                              {/* Preview */}
+                              <div className="text-center">
+                                <img
+                                  src={generateQRCode(selectedEmployee, qrStyle) || "/placeholder.svg"}
+                                  alt="QR Code Preview"
+                                  className="w-48 h-48 mx-auto border rounded-lg"
+                                />
+                              </div>
+
+                              {/* Style Options */}
+                              <div className="space-y-4">
+                                <div>
+                                  <Label htmlFor="color" className="text-white">
+                                    Couleur du QR Code
+                                  </Label>
+                                  <Input
+                                    id="color"
+                                    type="color"
+                                    value={qrStyle.color}
+                                    onChange={(e) => setQrStyle((prev) => ({ ...prev, color: e.target.value }))}
+                                    className="h-10 bg-gray-700 border-gray-600"
+                                  />
+                                </div>
+
+                                <div>
+                                  <Label htmlFor="background" className="text-white">
+                                    Couleur de fond
+                                  </Label>
+                                  <Input
+                                    id="background"
+                                    type="color"
+                                    value={qrStyle.background}
+                                    onChange={(e) => setQrStyle((prev) => ({ ...prev, background: e.target.value }))}
+                                    className="h-10 bg-gray-700 border-gray-600"
+                                  />
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id="logo"
+                                    checked={qrStyle.logo}
+                                    onChange={(e) => setQrStyle((prev) => ({ ...prev, logo: e.target.checked }))}
+                                    className="rounded"
+                                  />
+                                  <Label htmlFor="logo" className="text-white">
+                                    Inclure le logo ClientIn
+                                  </Label>
+                                </div>
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
+                                  onClick={() => setQrStyle(selectedEmployee.qr_code_style || qrStyle)}
+                                >
+                                  Annuler
+                                </Button>
+                                <Button
+                                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                                  onClick={() => {
+                                    // Update QR style logic here
+                                    console.log("Updating QR style:", qrStyle)
+                                  }}
+                                >
+                                  Sauvegarder
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
