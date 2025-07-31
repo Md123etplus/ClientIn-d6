@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Logo } from "./logo"
+import { Logo } from "@/components/logo"
 
 export function LoadingScreen() {
   const [progress, setProgress] = useState(0)
@@ -21,31 +21,26 @@ export function LoadingScreen() {
   }, [])
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-violet-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center z-50">
-      <div className="text-center space-y-8">
-        {/* Logo */}
-        <div className="flex items-center justify-center">
-          <Logo className="scale-150" />
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+      <div className="text-center">
+        <Logo className="h-16 mx-auto mb-8" />
 
-        {/* Loading Text */}
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-white mb-2">
             ClientIn
-            <span className="inline-block w-2 h-2 bg-violet-500 rounded-full ml-1 animate-pulse" />
+            <span className="inline-block w-2 h-2 bg-white rounded-full ml-2 animate-pulse"></span>
           </h2>
-          <p className="text-gray-600 dark:text-gray-300">Chargement de votre espace...</p>
+          <p className="text-white/70">Chargement de votre expérience</p>
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-64 mx-auto space-y-2">
-          <div className="w-full bg-white/30 dark:bg-gray-700/30 rounded-full h-2 overflow-hidden">
+        <div className="w-80 mx-auto">
+          <div className="bg-white/20 rounded-full h-2 overflow-hidden">
             <div
-              className="h-full bg-white dark:bg-violet-400 rounded-full transition-all duration-300 ease-out"
+              className="bg-white h-full transition-all duration-300 ease-out rounded-full"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{progress}%</p>
+          <p className="text-white/60 text-sm mt-2">{progress}%</p>
         </div>
       </div>
     </div>
