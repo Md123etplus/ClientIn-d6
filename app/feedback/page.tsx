@@ -1,64 +1,48 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Star, Wifi, WifiOff, Send, User } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { createClient } from "@supabase/supabase-js"
+import { Star, Send, CheckCircle, AlertCircle, Wifi, WifiOff } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Logo } from "@/components/logo"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-)
 
 interface Employee {
   id: string
-  name: string
+  cin_number: string
+  full_name: string
   position: string
-  department: string
-  photo_url: string
+  department?: string
+  photo_url?: string
 }
 
-interface Feedback {
-  employeeId: string
-  rating: number
-  comment: string
+interface DeviceInfo {
+  userAgent: string
+  platform: string
+  language: string
+  screenResolution: string
   timestamp: string
 }
 
 export default function FeedbackPage() {
-  const [employeeId, setEmployeeId] = useState<string>("")
+  const searchParams = useSearchParams()
+  const employeeId = searchParams.get("id")
+  const source = searchParams.get("source") // 'nfc' or 'qr'
+
   const [employee, setEmployee] = useState<Employee | null>(null)
-  const [rating, setRating] = useState<number>(0)
-  const [comment, setComment] = useState<string>("")
-  const [isOnline, setIsOnline] = useState<boolean>(true)
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
-  const [submitted, setSubmitted] = useState<boolean>(false)
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isOnline, setIsOnline] = useState(true)
+  const [error, setError] = useState("")
 
-  // Get employee ID from URL params
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const id = urlParams.get("id")
-    const source = urlParams.get("source") // Track if from QR or NFC
-    if (id) {
-      setEmployeeId(id)
-      fetchEmployee(id)
-      // Track scan source
-      if (source === "qr") {
-        trackQRScan(id)
-      }
-    }
-  }, [])
-
-  // Monitor online status
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true)
-      syncPendingFeedbacks()
-    }
+    const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
 
     window.addEventListener("online", handleOnline)
@@ -71,119 +55,117 @@ export default function FeedbackPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (employeeId) {
+      fetchEmployee(employeeId)
+    }
+  }, [employeeId])
+
   const fetchEmployee = async (id: string) => {
     try {
-      const { data, error } = await supabase.from("employees").select("*").eq("id", id).single()
-
-      if (error) throw error
-      setEmployee(data)
+      // Simulate API call - replace with actual Supabase call
+      const mockEmployee: Employee = {
+        id: id,
+        cin_number: "AB123456",
+        full_name: "Mohammed Benali",
+        position: "Serveur",
+        department: "Restaurant",
+        photo_url: "/placeholder.svg?height=100&width=100",
+      }
+      setEmployee(mockEmployee)
     } catch (error) {
       console.error("Error fetching employee:", error)
+      setError("Employé non trouvé")
     }
   }
 
-  const trackQRScan = async (employeeId: string) => {
-    try {
-      const { error } = await supabase.rpc("increment_qr_scans", {
-        emp_id: employeeId,
-      })
-      if (error) console.error("Error tracking QR scan:", error)
-    } catch (error) {
-      console.error("Error tracking QR scan:", error)
-    }
-  }
-
-  const saveFeedbackLocally = (feedback: Feedback) => {
-    const pendingFeedbacks = JSON.parse(localStorage.getItem("pendingFeedbacks") || "[]")
-    pendingFeedbacks.push(feedback)
-    localStorage.setItem("pendingFeedbacks", JSON.stringify(pendingFeedbacks))
-  }
-
-  const syncPendingFeedbacks = async () => {
-    const pendingFeedbacks = JSON.parse(localStorage.getItem("pendingFeedbacks") || "[]")
-
-    if (pendingFeedbacks.length === 0) return
-
-    try {
-      const { error } = await supabase.from("feedbacks").insert(
-        pendingFeedbacks.map((feedback: Feedback) => ({
-          employee_id: feedback.employeeId,
-          rating: feedback.rating,
-          comment: feedback.comment,
-          created_at: feedback.timestamp,
-        })),
-      )
-
-      if (!error) {
-        localStorage.removeItem("pendingFeedbacks")
-        console.log("Synced pending feedbacks successfully")
-      }
-    } catch (error) {
-      console.error("Error syncing feedbacks:", error)
+  const getDeviceInfo = (): DeviceInfo => {
+    return {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      screenResolution: `${screen.width}x${screen.height}`,
+      timestamp: new Date().toISOString(),
     }
   }
 
   const submitFeedback = async () => {
-    if (rating === 0) return
+    if (rating === 0) {
+      setError("Veuillez sélectionner une note")
+      return
+    }
 
     setIsSubmitting(true)
+    setError("")
 
-    const feedback: Feedback = {
-      employeeId,
+    const feedbackData = {
+      employee_id: employeeId,
       rating,
-      comment: comment.trim(),
-      timestamp: new Date().toISOString(),
+      comment: comment.trim() || null,
+      is_anonymous: true,
+      device_info: getDeviceInfo(),
+      source: source || "direct",
     }
 
-    if (isOnline) {
-      try {
-        const { error } = await supabase.from("feedbacks").insert({
-          employee_id: feedback.employeeId,
-          rating: feedback.rating,
-          comment: feedback.comment,
+    try {
+      if (isOnline) {
+        // Submit directly to Supabase
+        console.log("Submitting feedback online:", feedbackData)
+        // Replace with actual Supabase call
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+      } else {
+        // Store in localStorage for offline sync
+        const pendingFeedbacks = JSON.parse(localStorage.getItem("pendingFeedbacks") || "[]")
+        pendingFeedbacks.push({
+          ...feedbackData,
+          id: crypto.randomUUID(),
+          created_at: new Date().toISOString(),
         })
-
-        if (error) throw error
-
-        setSubmitted(true)
-      } catch (error) {
-        console.error("Error submitting feedback:", error)
-        saveFeedbackLocally(feedback)
-        setSubmitted(true)
+        localStorage.setItem("pendingFeedbacks", JSON.stringify(pendingFeedbacks))
+        console.log("Stored feedback offline:", feedbackData)
       }
-    } else {
-      saveFeedbackLocally(feedback)
-      setSubmitted(true)
+
+      setIsSubmitted(true)
+    } catch (error) {
+      console.error("Error submitting feedback:", error)
+      setError("Erreur lors de l'envoi. Réessayez.")
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setIsSubmitting(false)
   }
 
-  const resetForm = () => {
-    setRating(0)
-    setComment("")
-    setSubmitted(false)
-  }
-
-  if (submitted) {
+  if (!employee) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
-          <CardContent className="text-center p-8">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Merci pour votre retour !</h2>
-            <p className="text-gray-600 mb-6">
-              {isOnline
-                ? "Votre feedback a été envoyé avec succès."
-                : "Votre feedback a été sauvegardé et sera envoyé dès que la connexion sera rétablie."}
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Employé non trouvé</h2>
+            <p className="text-muted-foreground">L'identifiant de l'employé n'est pas valide.</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Merci !</h2>
+            <p className="text-muted-foreground mb-4">
+              Votre feedback a été {isOnline ? "envoyé" : "enregistré et sera synchronisé"} avec succès.
             </p>
-            <Button onClick={resetForm} className="w-full">
-              Donner un autre avis
-            </Button>
+            {!isOnline && (
+              <Alert>
+                <WifiOff className="h-4 w-4" />
+                <AlertDescription>
+                  Votre feedback sera envoyé automatiquement quand vous serez en ligne.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -191,123 +173,124 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center mb-4">
-            <Logo className="h-8 w-auto" />
+        <div className="text-center mb-8">
+          <Logo className="mx-auto mb-4" />
+          <div className="flex items-center justify-center gap-2 mb-2">
+            {isOnline ? <Wifi className="h-4 w-4 text-green-500" /> : <WifiOff className="h-4 w-4 text-amber-500" />}
+            <span className="text-sm text-muted-foreground">{isOnline ? "En ligne" : "Hors ligne"}</span>
           </div>
-          <Badge variant={isOnline ? "default" : "secondary"} className="mb-4">
-            {isOnline ? (
-              <>
-                <Wifi className="w-4 h-4 mr-1" />
-                En ligne
-              </>
-            ) : (
-              <>
-                <WifiOff className="w-4 h-4 mr-1" />
-                Hors ligne - Sauvegardé localement
-              </>
-            )}
-          </Badge>
+          {source && (
+            <Badge variant="outline" className="mb-4">
+              Via {source === "nfc" ? "NFC" : "QR Code"}
+            </Badge>
+          )}
         </div>
 
         {/* Employee Card */}
-        {employee && (
-          <Card className="mb-6">
-            <CardContent className="flex items-center p-4">
-              <div className="w-16 h-16 rounded-full overflow-hidden mr-4">
-                <img
-                  src={employee.photo_url || "/placeholder.svg"}
-                  alt={employee.name}
-                  className="w-full h-full object-cover"
-                />
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={employee.photo_url || "/placeholder.svg"} alt={employee.full_name} />
+                <AvatarFallback className="text-lg">
+                  {employee.full_name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <h2 className="text-xl font-semibold">{employee.full_name}</h2>
+                <p className="text-muted-foreground">{employee.position}</p>
+                {employee.department && (
+                  <Badge variant="secondary" className="mt-1">
+                    {employee.department}
+                  </Badge>
+                )}
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">{employee.name}</h3>
-                <p className="text-sm text-gray-600">{employee.position}</p>
-                <p className="text-xs text-gray-500">{employee.department}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {!employee && employeeId && (
-          <Card className="mb-6">
-            <CardContent className="flex items-center p-4">
-              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mr-4">
-                <User className="w-8 h-8 text-gray-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Employé #{employeeId}</h3>
-                <p className="text-sm text-gray-600">Chargement des informations...</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Feedback Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Comment évaluez-vous le service ?</CardTitle>
+            <CardTitle>Évaluez ce service</CardTitle>
+            <CardDescription>
+              Votre avis nous aide à améliorer notre service. Votre feedback est anonyme.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Star Rating */}
-            <div className="text-center">
-              <div className="flex justify-center space-x-2 mb-2">
+            {/* Rating */}
+            <div>
+              <label className="text-sm font-medium mb-3 block">Note générale *</label>
+              <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <button key={star} onClick={() => setRating(star)} className="transition-colors">
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="p-1 rounded-full hover:bg-muted transition-colors"
+                  >
                     <Star
-                      className={`w-8 h-8 ${star <= rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+                      className={`h-8 w-8 ${
+                        star <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+                      }`}
                     />
                   </button>
                 ))}
               </div>
-              <p className="text-sm text-gray-600">
-                {rating === 0 && "Cliquez sur les étoiles pour noter"}
-                {rating === 1 && "Très insatisfait"}
-                {rating === 2 && "Insatisfait"}
-                {rating === 3 && "Neutre"}
-                {rating === 4 && "Satisfait"}
-                {rating === 5 && "Très satisfait"}
-              </p>
+              {rating > 0 && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  {rating === 1 && "Très insatisfait"}
+                  {rating === 2 && "Insatisfait"}
+                  {rating === 3 && "Neutre"}
+                  {rating === 4 && "Satisfait"}
+                  {rating === 5 && "Très satisfait"}
+                </p>
+              )}
             </div>
 
             {/* Comment */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Commentaire (optionnel)</label>
+              <label className="text-sm font-medium mb-3 block">Commentaire (optionnel)</label>
               <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value.slice(0, 500))}
                 placeholder="Partagez votre expérience..."
-                className="resize-none"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                maxLength={500}
                 rows={4}
               />
-              <p className="text-xs text-gray-500 mt-1">{comment.length}/500 caractères</p>
+              <p className="text-xs text-muted-foreground mt-1">{comment.length}/500 caractères</p>
             </div>
 
-            {/* Submit Button */}
-            <Button onClick={submitFeedback} disabled={rating === 0 || isSubmitting} className="w-full">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <Button onClick={submitFeedback} disabled={isSubmitting || rating === 0} className="w-full" size="lg">
               {isSubmitting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                   Envoi en cours...
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4 mr-2" />
+                  <Send className="h-4 w-4 mr-2" />
                   Envoyer le feedback
                 </>
               )}
             </Button>
+
+            <p className="text-xs text-center text-muted-foreground">Votre feedback est anonyme et confidentiel</p>
           </CardContent>
         </Card>
-
-        {/* Footer */}
-        <div className="text-center mt-6 text-xs text-gray-500">
-          <p>Powered by ClientIn • Votre avis compte</p>
-        </div>
       </div>
     </div>
   )

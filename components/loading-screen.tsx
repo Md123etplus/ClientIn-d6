@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
+import { Logo } from "./logo"
 
 export function LoadingScreen() {
   const [progress, setProgress] = useState(0)
@@ -12,7 +13,7 @@ export function LoadingScreen() {
           clearInterval(timer)
           return 100
         }
-        return prev + 2.5
+        return prev + 2
       })
     }, 80)
 
@@ -20,24 +21,32 @@ export function LoadingScreen() {
   }, [])
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center z-50">
-      <div className="text-center">
-        {/* Simple Logo */}
-        <div className="mb-8">
-          <div className="text-5xl font-bold text-white mb-4">ClientIn</div>
-          <div className="w-2 h-2 bg-white rounded-full mx-auto animate-pulse" />
+    <div className="fixed inset-0 bg-gradient-to-br from-violet-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center z-50">
+      <div className="text-center space-y-8">
+        {/* Logo */}
+        <div className="flex items-center justify-center">
+          <Logo className="scale-150" />
         </div>
 
-        {/* Simple Progress Bar */}
-        <div className="w-64 h-1 bg-white/20 rounded-full mb-4 overflow-hidden">
-          <div
-            className="h-full bg-white rounded-full transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
-          />
+        {/* Loading Text */}
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            ClientIn
+            <span className="inline-block w-2 h-2 bg-violet-500 rounded-full ml-1 animate-pulse" />
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300">Chargement de votre espace...</p>
         </div>
 
-        {/* Simple Text */}
-        <p className="text-white/80 text-sm">Loading... {Math.round(progress)}%</p>
+        {/* Progress Bar */}
+        <div className="w-64 mx-auto space-y-2">
+          <div className="w-full bg-white/30 dark:bg-gray-700/30 rounded-full h-2 overflow-hidden">
+            <div
+              className="h-full bg-white dark:bg-violet-400 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{progress}%</p>
+        </div>
       </div>
     </div>
   )
