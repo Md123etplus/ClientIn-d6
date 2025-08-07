@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Wifi, User, Building, Calendar } from "lucide-react"
+import { Wifi, User, Building, Calendar } from 'lucide-react'
 
 export function FloatingNFCCard() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })

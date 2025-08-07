@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Star, Send, CheckCircle, AlertCircle, Wifi, WifiOff } from "lucide-react"
+import { Star, Send, CheckCircle, AlertCircle, Wifi, WifiOff } from 'lucide-react'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Logo } from "@/components/logo"
 
@@ -136,11 +136,11 @@ export default function FeedbackPage() {
 
   if (!employee) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-card border-border">
           <CardContent className="p-6 text-center">
             <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Employé non trouvé</h2>
+            <h2 className="text-xl font-semibold mb-2 text-foreground">Employé non trouvé</h2>
             <p className="text-muted-foreground">L'identifiant de l'employé n'est pas valide.</p>
           </CardContent>
         </Card>
@@ -150,18 +150,18 @@ export default function FeedbackPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-card border-border">
           <CardContent className="p-6 text-center">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Merci !</h2>
+            <h2 className="text-2xl font-bold mb-2 text-foreground">Merci !</h2>
             <p className="text-muted-foreground mb-4">
               Votre feedback a été {isOnline ? "envoyé" : "enregistré et sera synchronisé"} avec succès.
             </p>
             {!isOnline && (
-              <Alert>
-                <WifiOff className="h-4 w-4" />
-                <AlertDescription>
+              <Alert className="bg-muted border-border">
+                <WifiOff className="h-4 w-4 text-amber-500" />
+                <AlertDescription className="text-muted-foreground">
                   Votre feedback sera envoyé automatiquement quand vous serez en ligne.
                 </AlertDescription>
               </Alert>
@@ -173,7 +173,7 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -183,19 +183,19 @@ export default function FeedbackPage() {
             <span className="text-sm text-muted-foreground">{isOnline ? "En ligne" : "Hors ligne"}</span>
           </div>
           {source && (
-            <Badge variant="outline" className="mb-4">
+            <Badge variant="outline" className="mb-4 border-border text-muted-foreground">
               Via {source === "nfc" ? "NFC" : "QR Code"}
             </Badge>
           )}
         </div>
 
         {/* Employee Card */}
-        <Card className="mb-6">
+        <Card className="mb-6 bg-card border-border">
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <Avatar className="h-16 w-16">
                 <AvatarImage src={employee.photo_url || "/placeholder.svg"} alt={employee.full_name} />
-                <AvatarFallback className="text-lg">
+                <AvatarFallback className="text-lg bg-secondary text-secondary-foreground">
                   {employee.full_name
                     .split(" ")
                     .map((n) => n[0])
@@ -203,7 +203,7 @@ export default function FeedbackPage() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <h2 className="text-xl font-semibold">{employee.full_name}</h2>
+                <h2 className="text-xl font-semibold text-foreground">{employee.full_name}</h2>
                 <p className="text-muted-foreground">{employee.position}</p>
                 {employee.department && (
                   <Badge variant="secondary" className="mt-1">
@@ -216,17 +216,17 @@ export default function FeedbackPage() {
         </Card>
 
         {/* Feedback Form */}
-        <Card>
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle>Évaluez ce service</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-foreground">Évaluez ce service</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Votre avis nous aide à améliorer notre service. Votre feedback est anonyme.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Rating */}
             <div>
-              <label className="text-sm font-medium mb-3 block">Note générale *</label>
+              <label className="text-sm font-medium mb-3 block text-foreground">Note générale *</label>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -256,28 +256,29 @@ export default function FeedbackPage() {
 
             {/* Comment */}
             <div>
-              <label className="text-sm font-medium mb-3 block">Commentaire (optionnel)</label>
+              <label className="text-sm font-medium mb-3 block text-foreground">Commentaire (optionnel)</label>
               <Textarea
                 placeholder="Partagez votre expérience..."
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 maxLength={500}
                 rows={4}
+                className="bg-muted border-border text-foreground"
               />
               <p className="text-xs text-muted-foreground mt-1">{comment.length}/500 caractères</p>
             </div>
 
             {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+              <Alert variant="destructive" className="bg-destructive/20 border-destructive/50">
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="text-destructive-foreground">{error}</AlertDescription>
               </Alert>
             )}
 
             <Button onClick={submitFeedback} disabled={isSubmitting || rating === 0} className="w-full" size="lg">
               {isSubmitting ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2" />
                   Envoi en cours...
                 </>
               ) : (

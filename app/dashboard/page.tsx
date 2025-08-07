@@ -6,21 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import {
-  Home,
-  Users,
-  MessageSquare,
-  BarChart3,
-  Settings,
-  Search,
-  Bell,
-  MoreHorizontal,
-  TrendingUp,
-  User,
-  Calendar,
-  ArrowRight,
-  QrCode,
-} from "lucide-react"
+import { Home, Users, MessageSquare, BarChart3, Settings, Search, Bell, MoreHorizontal, TrendingUp, User, Calendar, ArrowRight, QrCode } from 'lucide-react'
 
 import { Logo } from "@/components/logo"
 import { createClient } from "@supabase/supabase-js"
@@ -240,53 +226,53 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Chargement...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-foreground">Chargement...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-64 bg-gray-800 p-4">
+      <div className="fixed left-0 top-0 h-full w-64 bg-sidebar p-4">
         <div className="mb-8">
           <Logo className="h-8 mb-2" />
         </div>
 
         <nav className="space-y-2">
           <Link href="/dashboard">
-            <Button variant="ghost" className="w-full justify-start bg-purple-600 text-white hover:bg-purple-700">
+            <Button variant="ghost" className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90">
               <Home className="mr-3 h-4 w-4" />
               Dashboard
             </Button>
           </Link>
           <Link href="/dashboard/employees">
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
               <Users className="mr-3 h-4 w-4" />
               Employés
             </Button>
           </Link>
           <Link href="/dashboard/feedbacks">
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
               <MessageSquare className="mr-3 h-4 w-4" />
               Feedbacks
             </Button>
           </Link>
           <Link href="/dashboard/qr-codes">
-            <Button variant="ghost" className="w-full justify-start text-gray-300 text-white hover:bg-gray-700">
+            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
               <QrCode className="mr-3 h-4 w-4" />
               QR Codes
             </Button>
           </Link>
           <Link href="/dashboard/insights">
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
               <BarChart3 className="mr-3 h-4 w-4" />
               Insight
             </Button>
           </Link>
           <Link href="/dashboard/settings">
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
               <Settings className="mr-3 h-4 w-4" />
               Paramètres
             </Button>
@@ -295,13 +281,13 @@ export default function DashboardPage() {
 
         {/* Upgrade Card */}
         <div className="absolute bottom-4 left-4 right-4">
-          <Card className="bg-purple-600 border-purple-600">
+          <Card className="bg-primary border-primary">
             <CardContent className="p-4">
-              <h3 className="font-bold text-white mb-1">UPGRADE</h3>
-              <h4 className="font-bold text-white mb-2">CLIENTIN PRO</h4>
-              <p className="text-xs text-purple-100 mb-4">Débloquez des rapports avancés, des intégrations CRM...</p>
+              <h3 className="font-bold text-primary-foreground mb-1">UPGRADE</h3>
+              <h4 className="font-bold text-primary-foreground mb-2">CLIENTIN PRO</h4>
+              <p className="text-xs text-primary-foreground/80 mb-4">Débloquez des rapports avancés, des intégrations CRM...</p>
               <div className="text-right">
-                <ArrowRight className="h-6 w-6 text-white ml-auto" />
+                <ArrowRight className="h-6 w-6 text-primary-foreground ml-auto" />
               </div>
             </CardContent>
           </Card>
@@ -315,16 +301,16 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input placeholder="Search Here" className="pl-10 bg-gray-800 border-gray-700 text-white w-64" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search Here" className="pl-10 bg-muted border-border text-foreground w-64" />
             </div>
-            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               <MessageSquare className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               <Bell className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-gray-400 hover:text-white">
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-foreground">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/placeholder.svg?height=32&width=32" />
                 <AvatarFallback>
@@ -339,30 +325,30 @@ export default function DashboardPage() {
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Feedback Collecté */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-white">Feedback Collecté</CardTitle>
+                <CardTitle className="text-foreground">Feedback Collecté</CardTitle>
                 <div className="flex items-center space-x-4">
                   <Badge className="bg-green-600 text-white">{stats.positiveFeedbacks} Positifs</Badge>
                   <Badge className="bg-red-600 text-white">{stats.negativeFeedbacks} Négatifs</Badge>
                   <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                    <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </div>
               </CardHeader>
             </Card>
 
             {/* General */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-white">General</CardTitle>
+                <CardTitle className="text-foreground">General</CardTitle>
                 <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-4 gap-4 text-sm text-gray-400 mb-4">
+                  <div className="grid grid-cols-4 gap-4 text-sm text-muted-foreground mb-4">
                     <div className="flex items-center">
                       <User className="h-4 w-4 mr-2" />
                       CLIENT
@@ -381,18 +367,18 @@ export default function DashboardPage() {
                   {recentFeedbacks.map((feedback) => (
                     <div key={feedback.id} className="grid grid-cols-4 gap-4 items-center py-2">
                       <div>
-                        <p className="text-white font-medium">{feedback.employee?.full_name}</p>
-                        <p className="text-gray-400 text-sm">{formatDate(feedback.created_at)}</p>
+                        <p className="text-foreground font-medium">{feedback.employee?.full_name}</p>
+                        <p className="text-muted-foreground text-sm">{formatDate(feedback.created_at)}</p>
                       </div>
                       <div>
-                        <p className="text-white">{getDateLabel(feedback.created_at)}</p>
-                        <p className="text-gray-400 text-sm">{getTimeLabel(feedback.created_at)}</p>
+                        <p className="text-foreground">{getDateLabel(feedback.created_at)}</p>
+                        <p className="text-muted-foreground text-sm">{getTimeLabel(feedback.created_at)}</p>
                       </div>
                       <div>
                         <Badge className={feedback.rating >= 4 ? "bg-green-600 text-white" : "bg-red-600 text-white"}>
                           {feedback.rating >= 4 ? "Avis positif" : "Avis négatif"}
                         </Badge>
-                        <p className="text-gray-400 text-sm">Success</p>
+                        <p className="text-muted-foreground text-sm">Success</p>
                       </div>
                       <div></div>
                     </div>
@@ -402,11 +388,11 @@ export default function DashboardPage() {
             </Card>
 
             {/* Employé Actif */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-white">EMPLOYÉ ACTIF</CardTitle>
+                <CardTitle className="text-foreground">EMPLOYÉ ACTIF</CardTitle>
                 <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </CardHeader>
               <CardContent>
@@ -415,14 +401,14 @@ export default function DashboardPage() {
                     <div key={employee.id} className="flex-shrink-0 text-center">
                       <Avatar className="h-12 w-12 mx-auto mb-2">
                         <AvatarImage src={employee.photo_url || "/placeholder.svg"} />
-                        <AvatarFallback className="bg-gray-700 text-white">
+                        <AvatarFallback className="bg-secondary text-secondary-foreground">
                           {employee.full_name
                             .split(" ")
                             .map((n) => n[0])
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
-                      <p className="text-white text-sm">{employee.full_name}</p>
+                      <p className="text-foreground text-sm">{employee.full_name}</p>
                     </div>
                   ))}
                 </div>
@@ -433,19 +419,19 @@ export default function DashboardPage() {
           {/* Right Column */}
           <div className="space-y-6">
             {/* Subscription Card */}
-            <Card className="bg-purple-600 border-purple-600">
+            <Card className="bg-primary border-primary">
               <CardContent className="p-6">
-                <h3 className="font-bold text-white mb-2">Abonnement au service</h3>
-                <p className="text-white text-sm mb-1">123-456-7890</p>
-                <p className="text-white text-sm mb-1">Type d'abonnement : Mensuelle</p>
-                <p className="text-white text-sm mb-1">Statut : Actif</p>
-                <p className="text-white text-sm mb-1">Date d'expiration</p>
-                <p className="text-white text-sm mb-4">Marge 25/04/2025</p>
-                <p className="text-white text-sm mb-4">Renouvellement : 25/04/2025</p>
+                <h3 className="font-bold text-primary-foreground mb-2">Abonnement au service</h3>
+                <p className="text-primary-foreground text-sm mb-1">123-456-7890</p>
+                <p className="text-primary-foreground text-sm mb-1">Type d'abonnement : Mensuelle</p>
+                <p className="text-primary-foreground text-sm mb-1">Statut : Actif</p>
+                <p className="text-primary-foreground text-sm mb-1">Date d'expiration</p>
+                <p className="text-primary-foreground text-sm mb-4">Marge 25/04/2025</p>
+                <p className="text-primary-foreground text-sm mb-4">Renouvellement : 25/04/2025</p>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white text-sm">Mohamed</p>
-                    <p className="text-white text-xs">CEO</p>
+                    <p className="text-primary-foreground text-sm">Mohamed</p>
+                    <p className="text-primary-foreground text-xs">CEO</p>
                   </div>
                   <Button variant="secondary" size="sm">
                     <Settings className="h-4 w-4" />
@@ -455,30 +441,30 @@ export default function DashboardPage() {
             </Card>
 
             {/* Feedback Statistique */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-white">Feedback Statistique</CardTitle>
+                <CardTitle className="text-foreground">Feedback Statistique</CardTitle>
                 <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
-                  <div className="w-full h-32 bg-gray-700 rounded-lg flex items-center justify-center mb-4">
-                    <TrendingUp className="h-16 w-16 text-purple-400" />
+                  <div className="w-full h-32 bg-muted rounded-lg flex items-center justify-center mb-4">
+                    <TrendingUp className="h-16 w-16 text-primary" />
                   </div>
-                  <p className="text-gray-400 text-sm">Graphique des tendances</p>
-                  <p className="text-gray-500 text-xs mt-2">Données des 30 derniers jours</p>
+                  <p className="text-muted-foreground text-sm">Graphique des tendances</p>
+                  <p className="text-muted-foreground text-xs mt-2">Données des 30 derniers jours</p>
                 </div>
               </CardContent>
             </Card>
 
             {/* Service Client */}
-            <Card className="bg-purple-600 border-purple-600">
+            <Card className="bg-primary border-primary">
               <CardContent className="p-6 text-center">
-                <h3 className="font-bold text-white mb-4">Service Client 24H/7J</h3>
-                <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto">
-                  <MessageSquare className="h-8 w-8 text-white" />
+                <h3 className="font-bold text-primary-foreground mb-4">Service Client 24H/7J</h3>
+                <div className="w-16 h-16 bg-primary-foreground/20 rounded-full flex items-center justify-center mx-auto">
+                  <MessageSquare className="h-8 w-8 text-primary-foreground" />
                 </div>
               </CardContent>
             </Card>

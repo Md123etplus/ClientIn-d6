@@ -1,30 +1,60 @@
-# ClientIn v0 Solution
+# ClientIn: NFC-based Employee Feedback System
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+This project is an NFC-based employee feedback system designed to collect instant customer feedback via NFC tags and QR codes, even offline. It features a dashboard for managers to track employee performance, analyze feedback trends, and manage QR codes.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/moussadembel009-gmailcoms-projects/v0-client-in-v0-solution)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/4QZ5nHxIFnm)
+## Features
 
-## Overview
+- **Instant Feedback Collection**: Customers can tap NFC tags or scan QR codes to provide feedback.
+- **Offline-First Capability**: Feedback can be collected even without an internet connection and synchronized later.
+- **Employee Management**: Add, edit, and delete employee profiles.
+- **QR Code Generation & Customization**: Generate unique QR codes for each employee with customizable styles.
+- **Feedback Analytics**: View and filter feedback, analyze trends, and identify top-performing employees.
+- **Dashboard Overview**: A comprehensive dashboard providing key metrics and recent activities.
+- **Authentication**: Secure login for managers.
+- **Responsive Design**: Optimized for various screen sizes.
+- **Pure Blue & White Theme**: A clean and modern aesthetic.
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## Technologies Used
 
-## Deployment
+- **Next.js**: React framework for building the web application.
+- **React**: Frontend library for building user interfaces.
+- **Tailwind CSS**: Utility-first CSS framework for styling.
+- **shadcn/ui**: Reusable UI components built with Radix UI and Tailwind CSS.
+- **Lucide React**: Icon library.
+- **Supabase**: Backend-as-a-Service for database, authentication, and storage.
+- **Recharts**: For building interactive charts and data visualizations.
 
-Your project is live at:
+## Getting Started
 
-**[https://vercel.com/moussadembel009-gmailcoms-projects/v0-client-in-v0-solution](https://vercel.com/moussadembel009-gmailcoms-projects/v0-client-in-v0-solution)**
+### Prerequisites
 
-## Build your app
+- Node.js (v18.x or higher)
+- npm or Yarn
+- A Supabase account
 
-Continue building your app on:
+### Installation
 
-**[https://v0.dev/chat/projects/4QZ5nHxIFnm](https://v0.dev/chat/projects/4QZ5nHxIFnm)**
+1.  **Clone the repository:**
 
-## How It Works
+    \`\`\`bash
+    git clone https://github.com/your-username/clientin-nfc-feedback.git
+    cd clientin-nfc-feedback
+    \`\`\`
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+2.  **Install dependencies:**
+
+    \`\`\`bash
+    npm install
+    # or
+    yarn install
+    \`\`\`
+
+3.  **Set up Supabase:**
+
+    a.  Create a new project in your Supabase dashboard.
+    b.  Go to `Settings > API` and copy your `Project URL` and `anon public` key.
+    c.  Create a `.env.local` file in the root of your project and add the following:
+
+        \`\`\`env
+        NEXT_PUBLIC_SUPABASE_URL="YOUR_SUPABASE_URL"
+        NEXT_PUBLIC_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
