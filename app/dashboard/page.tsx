@@ -19,7 +19,9 @@ import {
   User,
   Calendar,
   ArrowRight,
+  QrCode,
 } from "lucide-react"
+
 import { Logo } from "@/components/logo"
 import { createClient } from "@supabase/supabase-js"
 import Link from "next/link"
@@ -76,8 +78,9 @@ export default function DashboardPage() {
   const checkAuth = async () => {
     const {
       data: { user },
+      error,
     } = await supabase.auth.getUser()
-    if (!user) {
+    if (!user || error) {
       router.push("/login")
       return
     }
@@ -268,6 +271,12 @@ export default function DashboardPage() {
             <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
               <MessageSquare className="mr-3 h-4 w-4" />
               Feedbacks
+            </Button>
+          </Link>
+          <Link href="/dashboard/qr-codes">
+            <Button variant="ghost" className="w-full justify-start text-gray-300 text-white hover:bg-gray-700">
+              <QrCode className="mr-3 h-4 w-4" />
+              QR Codes
             </Button>
           </Link>
           <Link href="/dashboard/insights">
