@@ -29,16 +29,14 @@ export function Logo({ className = "h-8 w-auto", animated = false }: LogoProps) 
   const isDark = resolvedTheme === "dark"
 
   return (
-    <div className={`${className} flex items-center`}>
-      <div
-        className={`
-          bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1.5 rounded-lg font-bold text-lg tracking-wider
-          ${animated ? "animate-pulse" : ""}
-          ${isDark ? "shadow-lg shadow-purple-500/25" : "shadow-lg shadow-purple-500/20"}
-        `}
-      >
-        ClientIn
-      </div>
+    <div
+      className={`
+        bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1.5 rounded-lg font-bold text-lg tracking-wider
+        ${animated ? "animate-pulse" : ""}
+        ${isDark ? "shadow-lg shadow-purple-500/25" : "shadow-lg shadow-purple-500/20"}
+      `}
+    >
+      ClientIn
     </div>
   )
 }

@@ -1,7 +1,5 @@
 import type { Config } from "tailwindcss"
 
-// all in fixtures is set to tailwind v3 as interims solutions
-
 const config: Config = {
   darkMode: "class",
   content: [
@@ -47,11 +45,11 @@ const config: Config = {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         chart: {
-          "1": "hsl(var(--chart-1))",
-          "2": "hsl(var(--chart-2))",
-          "3": "hsl(var(--chart-3))",
-          "4": "hsl(var(--chart-4))",
-          "5": "hsl(var(--chart-5))",
+          "1": "hsl(var(--primary))", /* Chart colors now use primary blue */
+          "2": "hsl(var(--secondary))", /* Secondary blue */
+          "3": "hsl(var(--muted))", /* Muted blue */
+          "4": "hsl(var(--accent))", /* Accent blue */
+          "5": "hsl(var(--primary))", /* Fallback to primary */
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

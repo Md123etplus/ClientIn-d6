@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, Mail, Lock, AlertCircle } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react'
 import { Logo } from "@/components/logo"
 import { createClient } from "@supabase/supabase-js"
 
@@ -66,60 +66,60 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-primary flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Logo className="mx-auto mb-4 h-12" />
-          <h1 className="text-2xl font-bold text-white mb-2">Connexion Manager</h1>
-          <p className="text-white/70">Accédez à votre tableau de bord ClientIn</p>
+          <h1 className="text-2xl font-bold text-primary-foreground mb-2">Connexion Manager</h1>
+          <p className="text-primary-foreground/70">Accédez à votre tableau de bord ClientIn</p>
         </div>
 
-        <Card className="backdrop-blur-sm bg-white/10 border-white/20">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-white">Se connecter</CardTitle>
-            <CardDescription className="text-white/70">
+            <CardTitle className="text-foreground">Se connecter</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Entrez vos identifiants pour accéder au dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">
+                <Label htmlFor="email" className="text-foreground">
                   Email
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-white/50" />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="manager@clientin.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-white">
+                <Label htmlFor="password" className="text-foreground">
                   Mot de passe
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-white/50" />
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    className="pl-10 pr-10 bg-muted border-border text-foreground placeholder:text-muted-foreground"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-white/50 hover:text-white"
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -127,15 +127,15 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <Alert variant="destructive" className="bg-red-500/20 border-red-500/50">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-white">{error}</AlertDescription>
+                <Alert variant="destructive" className="bg-destructive/20 border-destructive/50">
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  <AlertDescription className="text-destructive-foreground">{error}</AlertDescription>
                 </Alert>
               )}
 
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                className="w-full bg-primary hover:bg-primary/90"
                 disabled={loading}
               >
                 {loading ? "Connexion..." : "Se connecter"}
@@ -143,7 +143,7 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-white/70 text-sm">Pas de compte ? Contactez votre administrateur</p>
+              <p className="text-muted-foreground text-sm">Pas de compte ? Contactez votre administrateur</p>
             </div>
           </CardContent>
         </Card>

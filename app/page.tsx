@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Smartphone, Wifi, BarChart3, Moon, Sun, ArrowRight, Zap, Shield, Globe, ChevronDown, Play } from "lucide-react"
+import { Smartphone, Wifi, BarChart3, Moon, Sun, ArrowRight, Zap, Shield, Globe, ChevronDown, Play } from 'lucide-react'
 import { Logo } from "@/components/logo"
 import { LoadingScreen } from "@/components/loading-screen"
 import { FloatingNFCCard } from "@/components/floating-nfc-card"
@@ -149,38 +149,38 @@ export default function HomePage() {
                 icon: Smartphone,
                 title: "NFC & QR Code",
                 description: "Scan instantané sans application. Technologie NFC et QR codes personnalisés.",
-                color: "from-purple-500 to-purple-600",
+                color: "bg-primary", // Changed to use primary color
               },
               {
                 icon: Wifi,
                 title: "Offline-First",
                 description: "Fonctionne sans internet. Synchronisation automatique dès la reconnexion.",
-                color: "from-blue-500 to-blue-600",
+                color: "bg-primary", // Changed to use primary color
               },
               {
                 icon: BarChart3,
                 title: "Analytics Temps Réel",
                 description: "Dashboard avancé avec insights et métriques de performance détaillées.",
-                color: "from-green-500 to-green-600",
+                color: "bg-primary", // Changed to use primary color
               },
               {
                 icon: Shield,
                 title: "Sécurité Maximale",
                 description: "Chiffrement end-to-end et conformité RGPD pour vos données sensibles.",
-                color: "from-red-500 to-red-600",
+                color: "bg-primary", // Changed to use primary color
               },
             ].map((feature, index) => (
               <Card
                 key={index}
-                className="group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm"
+                className="group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border-border bg-card backdrop-blur-sm"
               >
                 <CardHeader className="text-center pb-4">
                   <div
-                    className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-r ${feature.color} flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300`}
+                    className={`w-16 h-16 mx-auto mb-4 rounded-2xl ${feature.color} flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300`}
                   >
-                    <feature.icon className="w-8 h-8 text-white" />
+                    <feature.icon className="w-8 h-8 text-primary-foreground" />
                   </div>
-                  <CardTitle className="text-xl font-bold">{feature.title}</CardTitle>
+                  <CardTitle className="text-xl font-bold text-foreground">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-center leading-relaxed">{feature.description}</p>
@@ -192,9 +192,9 @@ export default function HomePage() {
       </section>
 
       {/* Demo Section */}
-      <section className="py-32 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+      <section className="py-32 bg-secondary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-card rounded-3xl shadow-2xl p-8 md:p-16 border border-border/50 backdrop-blur-sm">
+          <div className="bg-card rounded-3xl shadow-2xl p-8 md:p-16 border border-border backdrop-blur-sm">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
               <div>
                 <h3 className="text-4xl md:text-5xl font-bold text-foreground mb-8">Comment ça marche ?</h3>
@@ -217,7 +217,7 @@ export default function HomePage() {
                     },
                   ].map((item, index) => (
                     <div key={index} className="flex items-start space-x-6">
-                      <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl flex items-center justify-center font-bold text-lg shadow-lg">
+                      <div className="w-12 h-12 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center font-bold text-lg shadow-lg">
                         {item.step}
                       </div>
                       <div>
@@ -230,16 +230,16 @@ export default function HomePage() {
               </div>
 
               <div className="relative">
-                <div className="bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/50 dark:to-blue-900/50 rounded-3xl p-12 text-center backdrop-blur-sm border border-purple-200/50 dark:border-purple-800/50">
+                <div className="bg-muted rounded-3xl p-12 text-center backdrop-blur-sm border border-border">
                   <div className="w-40 h-40 bg-card rounded-3xl shadow-2xl mx-auto mb-8 flex items-center justify-center transform hover:scale-105 transition-all duration-300">
-                    <Smartphone className="w-20 h-20 text-purple-600" />
+                    <Smartphone className="w-20 h-20 text-primary" />
                   </div>
                   <h4 className="text-2xl font-bold text-foreground mb-4">Testez Maintenant</h4>
                   <p className="text-muted-foreground mb-8 text-lg">Découvrez l'expérience client révolutionnaire</p>
                   <Link href="/feedback?id=EMP001">
                     <Button
                       size="lg"
-                      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg font-semibold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
                     >
                       <Play className="w-5 h-5 mr-2" />
                       Démo Interactive
@@ -248,8 +248,8 @@ export default function HomePage() {
                 </div>
 
                 {/* Floating elements */}
-                <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-20 animate-pulse" />
-                <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-green-400 to-blue-500 rounded-full opacity-20 animate-pulse animation-delay-2000" />
+                <div className="absolute -top-4 -right-4 w-24 h-24 bg-yellow-400 rounded-full opacity-20 animate-pulse" />
+                <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-green-400 rounded-full opacity-20 animate-pulse animation-delay-2000" />
               </div>
             </div>
           </div>
@@ -257,16 +257,16 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 dark:bg-gray-950 text-white py-16">
+      <footer className="bg-background text-foreground py-16 border-t border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Logo className="h-12 mb-6" />
-          <p className="text-gray-400 mb-6 text-lg">Révolutionnez votre feedback client avec la technologie NFC</p>
+          <p className="text-muted-foreground mb-6 text-lg">Révolutionnez votre feedback client avec la technologie NFC</p>
           <div className="flex justify-center space-x-8 mb-8">
-            <Globe className="w-6 h-6 text-gray-400" />
-            <Shield className="w-6 h-6 text-gray-400" />
-            <Zap className="w-6 h-6 text-gray-400" />
+            <Globe className="w-6 h-6 text-muted-foreground" />
+            <Shield className="w-6 h-6 text-muted-foreground" />
+            <Zap className="w-6 h-6 text-muted-foreground" />
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             © 2024 ClientIn. Tous droits réservés. &bull; CEO &amp; Founder: AMAM ABIR
           </p>
         </div>

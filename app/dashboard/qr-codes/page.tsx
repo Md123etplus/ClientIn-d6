@@ -8,22 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import {
-  QrCode,
-  Download,
-  Eye,
-  Palette,
-  RefreshCw,
-  Copy,
-  Check,
-  Users,
-  Home,
-  MessageSquare,
-  BarChart3,
-  Settings,
-  Search,
-  TrendingUp,
-} from "lucide-react"
+import { QrCode, Download, Eye, Palette, RefreshCw, Copy, Check, Users, Home, MessageSquare, BarChart3, Settings, Search, TrendingUp } from 'lucide-react'
 import { Logo } from "@/components/logo"
 import Link from "next/link"
 
@@ -56,8 +41,8 @@ export default function QRCodesPage() {
   const [loading, setLoading] = useState(true)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [qrStyle, setQrStyle] = useState({
-    color: "#7c3aed",
-    background: "#ffffff",
+    color: "#2563eb", // Pure blue
+    background: "#ffffff", // Pure white
     logo: true,
   })
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -80,7 +65,7 @@ export default function QRCodesPage() {
           photo_url: "/placeholder.svg?height=40&width=40",
           qr_code_id: "QR001",
           qr_code_url: `${window.location.origin}/feedback?id=1&source=qr`,
-          qr_code_style: { color: "#7c3aed", background: "#ffffff", logo: true },
+          qr_code_style: { color: "#2563eb", background: "#ffffff", logo: true }, // Pure blue and white
           qr_scans: 24,
         },
         {
@@ -92,7 +77,7 @@ export default function QRCodesPage() {
           photo_url: "/placeholder.svg?height=40&width=40",
           qr_code_id: "QR002",
           qr_code_url: `${window.location.origin}/feedback?id=2&source=qr`,
-          qr_code_style: { color: "#059669", background: "#ffffff", logo: true },
+          qr_code_style: { color: "#2563eb", background: "#ffffff", logo: true }, // Pure blue and white
           qr_scans: 18,
         },
         {
@@ -104,7 +89,7 @@ export default function QRCodesPage() {
           photo_url: "/placeholder.svg?height=40&width=40",
           qr_code_id: "QR003",
           qr_code_url: `${window.location.origin}/feedback?id=3&source=qr`,
-          qr_code_style: { color: "#dc2626", background: "#ffffff", logo: true },
+          qr_code_style: { color: "#2563eb", background: "#ffffff", logo: true }, // Pure blue and white
           qr_scans: 31,
         },
       ]
@@ -161,51 +146,51 @@ export default function QRCodesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Chargement des QR codes...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-foreground">Chargement des QR codes...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-64 bg-gray-800 p-4">
+      <div className="fixed left-0 top-0 h-full w-64 bg-sidebar p-4">
         <div className="mb-8">
           <Logo className="h-8 mb-2" />
         </div>
 
         <nav className="space-y-2">
           <Link href="/dashboard">
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
               <Home className="mr-3 h-4 w-4" />
               Dashboard
             </Button>
           </Link>
           <Link href="/dashboard/employees">
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
               <Users className="mr-3 h-4 w-4" />
               Employés
             </Button>
           </Link>
           <Link href="/dashboard/feedbacks">
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
               <MessageSquare className="mr-3 h-4 w-4" />
               Feedbacks
             </Button>
           </Link>
-          <Button variant="ghost" className="w-full justify-start bg-purple-600 text-white hover:bg-purple-700">
+          <Button variant="ghost" className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90">
             <QrCode className="mr-3 h-4 w-4" />
             QR Codes
           </Button>
           <Link href="/dashboard/insights">
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
               <BarChart3 className="mr-3 h-4 w-4" />
               Insight
             </Button>
           </Link>
           <Link href="/dashboard/settings">
-            <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700">
+            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
               <Settings className="mr-3 h-4 w-4" />
               Paramètres
             </Button>
@@ -219,19 +204,19 @@ export default function QRCodesPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold">Gestion QR Codes</h1>
-            <p className="text-gray-400">Gérez les QR codes de vos employés</p>
+            <p className="text-muted-foreground">Gérez les QR codes de vos employés</p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher un employé..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-700 border-gray-600 text-white w-64"
+                className="pl-10 bg-muted border-border text-foreground w-64"
               />
             </div>
-            <Button className="bg-purple-600 hover:bg-purple-700">
+            <Button className="bg-primary hover:bg-primary/90">
               <RefreshCw className="mr-2 h-4 w-4" />
               Régénérer Tous
             </Button>
@@ -240,36 +225,36 @@ export default function QRCodesPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-card border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">QR Codes Générés</p>
-                  <p className="text-3xl font-bold text-white">{stats.generated}</p>
+                  <p className="text-muted-foreground text-sm">QR Codes Générés</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.generated}</p>
                 </div>
-                <QrCode className="w-12 h-12 text-purple-400" />
+                <QrCode className="w-12 h-12 text-primary" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-card border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">QR Codes Scannés</p>
-                  <p className="text-3xl font-bold text-white">{stats.scanned}</p>
+                  <p className="text-muted-foreground text-sm">QR Codes Scannés</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.scanned}</p>
                 </div>
                 <Eye className="w-12 h-12 text-green-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-card border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Taux d'Utilisation</p>
-                  <p className="text-3xl font-bold text-white">
+                  <p className="text-muted-foreground text-sm">Taux d'Utilisation</p>
+                  <p className="text-3xl font-bold text-foreground">
                     {stats.total > 0 ? Math.round((stats.scanned / stats.total) * 100) : 0}%
                   </p>
                 </div>
@@ -280,23 +265,23 @@ export default function QRCodesPage() {
         </div>
 
         {/* QR Codes Grid */}
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-white">QR Codes des Employés</CardTitle>
+            <CardTitle className="text-foreground">QR Codes des Employés</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredEmployees.map((employee) => (
                 <Card
                   key={employee.id}
-                  className="bg-gray-700 border-gray-600 hover:border-purple-500 transition-colors"
+                  className="bg-muted border-border hover:border-primary/80 transition-colors"
                 >
                   <CardContent className="p-6">
                     {/* Employee Info */}
                     <div className="flex items-center space-x-3 mb-4">
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={employee.photo_url || "/placeholder.svg"} />
-                        <AvatarFallback className="bg-gray-600 text-white">
+                        <AvatarFallback className="bg-secondary text-secondary-foreground">
                           {employee.full_name
                             .split(" ")
                             .map((n) => n[0])
@@ -304,28 +289,28 @@ export default function QRCodesPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <h3 className="font-semibold text-white">{employee.full_name}</h3>
-                        <p className="text-gray-400 text-sm">{employee.position}</p>
-                        <p className="text-gray-500 text-xs">CIN: {employee.cin_number}</p>
+                        <h3 className="font-semibold text-foreground">{employee.full_name}</h3>
+                        <p className="text-muted-foreground text-sm">{employee.position}</p>
+                        <p className="text-muted-foreground text-xs">CIN: {employee.cin_number}</p>
                       </div>
                     </div>
 
                     {/* QR Code Preview */}
-                    <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-500 mb-4">
+                    <div className="bg-white p-4 rounded-lg border-2 border-dashed border-border mb-4">
                       <div className="text-center">
                         <img
                           src={generateQRCode(employee, employee.qr_code_style) || "/placeholder.svg"}
                           alt={`QR Code ${employee.full_name}`}
                           className="w-32 h-32 mx-auto mb-2"
                         />
-                        <Badge variant="outline" className="text-xs border-gray-400 text-gray-600">
+                        <Badge variant="outline" className="text-xs border-muted-foreground text-muted-foreground">
                           {employee.qr_code_id}
                         </Badge>
                       </div>
                     </div>
 
                     {/* Stats */}
-                    <div className="flex justify-between text-sm text-gray-400 mb-4">
+                    <div className="flex justify-between text-sm text-muted-foreground mb-4">
                       <span>Scans: {employee.qr_scans || 0}</span>
                       <span>Actif</span>
                     </div>
@@ -336,7 +321,7 @@ export default function QRCodesPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
+                          className="flex-1 border-border text-muted-foreground hover:bg-accent bg-transparent"
                           onClick={() => copyToClipboard(employee.qr_code_url || "", employee.id)}
                         >
                           {copiedId === employee.id ? (
@@ -349,7 +334,7 @@ export default function QRCodesPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
+                          className="flex-1 border-border text-muted-foreground hover:bg-accent bg-transparent"
                           onClick={() => downloadQRCode(employee)}
                         >
                           <Download className="w-4 h-4 mr-1" />
@@ -362,7 +347,7 @@ export default function QRCodesPage() {
                           <Button
                             variant="default"
                             size="sm"
-                            className="w-full bg-purple-600 hover:bg-purple-700"
+                            className="w-full bg-primary hover:bg-primary/90"
                             onClick={() => {
                               setSelectedEmployee(employee)
                               setQrStyle(employee.qr_code_style || qrStyle)
@@ -372,7 +357,7 @@ export default function QRCodesPage() {
                             Personnaliser
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-md bg-gray-800 border-gray-700 text-white">
+                        <DialogContent className="max-w-md bg-card border-border text-foreground">
                           <DialogHeader>
                             <DialogTitle>Personnaliser QR Code - {selectedEmployee?.full_name}</DialogTitle>
                           </DialogHeader>
@@ -390,7 +375,7 @@ export default function QRCodesPage() {
                               {/* Style Options */}
                               <div className="space-y-4">
                                 <div>
-                                  <Label htmlFor="color" className="text-white">
+                                  <Label htmlFor="color" className="text-foreground">
                                     Couleur du QR Code
                                   </Label>
                                   <Input
@@ -398,12 +383,12 @@ export default function QRCodesPage() {
                                     type="color"
                                     value={qrStyle.color}
                                     onChange={(e) => setQrStyle((prev) => ({ ...prev, color: e.target.value }))}
-                                    className="h-10 bg-gray-700 border-gray-600"
+                                    className="h-10 bg-muted border-border"
                                   />
                                 </div>
 
                                 <div>
-                                  <Label htmlFor="background" className="text-white">
+                                  <Label htmlFor="background" className="text-foreground">
                                     Couleur de fond
                                   </Label>
                                   <Input
@@ -411,7 +396,7 @@ export default function QRCodesPage() {
                                     type="color"
                                     value={qrStyle.background}
                                     onChange={(e) => setQrStyle((prev) => ({ ...prev, background: e.target.value }))}
-                                    className="h-10 bg-gray-700 border-gray-600"
+                                    className="h-10 bg-muted border-border"
                                   />
                                 </div>
 
@@ -423,7 +408,7 @@ export default function QRCodesPage() {
                                     onChange={(e) => setQrStyle((prev) => ({ ...prev, logo: e.target.checked }))}
                                     className="rounded"
                                   />
-                                  <Label htmlFor="logo" className="text-white">
+                                  <Label htmlFor="logo" className="text-foreground">
                                     Inclure le logo ClientIn
                                   </Label>
                                 </div>
@@ -433,13 +418,13 @@ export default function QRCodesPage() {
                               <div className="flex space-x-2">
                                 <Button
                                   variant="outline"
-                                  className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-600 bg-transparent"
+                                  className="flex-1 border-border text-muted-foreground hover:bg-accent bg-transparent"
                                   onClick={() => setQrStyle(selectedEmployee.qr_code_style || qrStyle)}
                                 >
                                   Annuler
                                 </Button>
                                 <Button
-                                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                                  className="flex-1 bg-primary hover:bg-primary/90"
                                   onClick={() => {
                                     // Update QR style logic here
                                     console.log("Updating QR style:", qrStyle)
