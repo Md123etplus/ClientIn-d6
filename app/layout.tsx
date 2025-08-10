@@ -1,5 +1,6 @@
+import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from 'next/font/google'
+import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -7,7 +8,7 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "ClientIn - NFC Feedback System",
-  description: "Collect instant customer feedback via NFC and QR codes, even offline.",
+  description: "NFC-based employee feedback system for enhanced customer satisfaction.",
     generator: 'v0.dev'
 }
 

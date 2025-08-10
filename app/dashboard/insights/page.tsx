@@ -4,18 +4,24 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BarChart3, Users, Home, MessageSquare, Settings, TrendingUp, Star, Building, QrCode } from 'lucide-react'
+import { BarChart3, Users, Home, MessageSquare, Settings, Star, QrCode } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Logo } from "@/components/logo"
-import { createClient } from "@supabase/supabase-js"
+import { supabase } from "@/lib/supabase" // Use the client-side Supabase client
 import Link from "next/link"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-)
 
 interface FeedbackTrend {
   date: string
@@ -44,6 +50,15 @@ export default function InsightsPage() {
   const [feedbackTrends, setFeedbackTrends] = useState<FeedbackTrend[]>([])
   const [departmentPerformance, setDepartmentPerformance] = useState<DepartmentPerformance[]>([])
   const [topEmployees, setTopEmployees] = useState<TopEmployee[]>([])
+  const [keyMetrics, setKeyMetrics] = useState({
+    avgRating: 0,
+    responseRate: 0,
+    totalFeedbacks: 0,
+    activeEmployees: 0,
+    newFeedbacksToday: 0,
+    employeesWithZeroFeedback: 0,
+    urgentIssues: 0,
+  })
 
   useEffect(() => {
     fetchInsightsData()
@@ -51,38 +66,143 @@ export default function InsightsPage() {
 
   const fetchInsightsData = async () => {
     try {
-      // Mock data - replace with actual Supabase queries
-      const mockFeedbackTrends: FeedbackTrend[] = [
-        { date: "Jul 20", positive: 10, negative: 2, neutral: 1 },
-        { date: "Jul 21", positive: 12, negative: 3, neutral: 0 },
-        { date: "Jul 22", positive: 8, negative: 1, neutral: 2 },
-        { date: "Jul 23", positive: 15, negative: 4, neutral: 1 },
-        { date: "Jul 24", positive: 11, negative: 2, neutral: 3 },
-        { date: "Jul 25", positive: 14, negative: 3, neutral: 0 },
-        { date: "Jul 26", positive: 9, negative: 1, neutral: 2 },
-      ]
+      setLoading(true)
 
-      const mockDepartmentPerformance: DepartmentPerformance[] = [
-        { name: "Restaurant", avg_rating: 4.5, feedback_count: 50 },
-        { name: "Vente", avg_rating: 4.2, feedback_count: 30 },
-        { name: "Service Client", avg_rating: 3.8, feedback_count: 40 },
-        { name: "Administration", avg_rating: 4.0, feedback_count: 15 },
-      ]
+      // Fetch all feedbacks and employees for client-side aggregation
+      const { data: feedbacksData, error: feedbacksError } = await supabase
+        .from("feedbacks")
+        .select(`*, employee:employees(id, full_name, position, department)`)
+        .gte("created_at", getStartDate(timeframe))
 
-      const mockTopEmployees: TopEmployee[] = [
-        { id: "1", full_name: "Mohammed Benali", position: "Serveur", avg_rating: 4.8, feedback_count: 25 },
-        { id: "2", full_name: "Sarah Khalil", position: "Caissière", avg_rating: 4.6, feedback_count: 18 },
-        { id: "3", full_name: "Meriem Alami", position: "Conseillère", avg_rating: 4.3, feedback_count: 20 },
-      ]
+      const { data: employeesData, error: employeesError } = await supabase.from("employees").select("*")
 
-      setFeedbackTrends(mockFeedbackTrends)
-      setDepartmentPerformance(mockDepartmentPerformance)
-      setTopEmployees(mockTopEmployees)
+      if (feedbacksError) {
+        console.error("Error fetching feedbacks for insights:", feedbacksError)
+        return
+      }
+      if (employeesError) {
+        console.error("Error fetching employees for insights:", employeesError)
+        return
+      }
+
+      const allFeedbacks = feedbacksData || []
+      const allEmployees = employeesData || []
+
+      // Aggregate Feedback Trends
+      const trendsMap = new Map<string, { positive: number; negative: number; neutral: number }>()
+      allFeedbacks.forEach((f) => {
+        const date = new Date(f.created_at).toISOString().split("T")[0] // YYYY-MM-DD
+        const current = trendsMap.get(date) || { positive: 0, negative: 0, neutral: 0 }
+        if (f.rating >= 4) current.positive++
+        else if (f.rating <= 2) current.negative++
+        else current.neutral++
+        trendsMap.set(date, current)
+      })
+      const sortedTrends = Array.from(trendsMap.entries())
+        .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+        .map(([date, counts]) => ({ date, ...counts }))
+      setFeedbackTrends(sortedTrends)
+
+      // Aggregate Department Performance
+      const deptMap = new Map<string, { totalRating: number; count: number }>()
+      allFeedbacks.forEach((f) => {
+        if (f.employee?.department) {
+          const current = deptMap.get(f.employee.department) || { totalRating: 0, count: 0 }
+          current.totalRating += f.rating
+          current.count++
+          deptMap.set(f.employee.department, current)
+        }
+      })
+      const deptPerformance = Array.from(deptMap.entries()).map(([name, { totalRating, count }]) => ({
+        name,
+        avg_rating: totalRating / count,
+        feedback_count: count,
+      }))
+      setDepartmentPerformance(deptPerformance)
+
+      // Aggregate Top Employees
+      const employeeRatingMap = new Map<
+        string,
+        { totalRating: number; count: number; full_name: string; position: string }
+      >()
+      allFeedbacks.forEach((f) => {
+        if (f.employee) {
+          const current = employeeRatingMap.get(f.employee.id) || {
+            totalRating: 0,
+            count: 0,
+            full_name: f.employee.full_name,
+            position: f.employee.position,
+          }
+          current.totalRating += f.rating
+          current.count++
+          employeeRatingMap.set(f.employee.id, current)
+        }
+      })
+      const topEmployeesList = Array.from(employeeRatingMap.entries())
+        .map(([id, { totalRating, count, full_name, position }]) => ({
+          id,
+          full_name,
+          position,
+          avg_rating: totalRating / count,
+          feedback_count: count,
+        }))
+        .sort((a, b) => b.avg_rating - a.avg_rating)
+        .slice(0, 5) // Top 5 employees
+      setTopEmployees(topEmployeesList)
+
+      // Calculate Key Metrics
+      const totalFeedbacksCount = allFeedbacks.length
+      const totalRatingSum = allFeedbacks.reduce((sum, f) => sum + f.rating, 0)
+      const avgRating = totalFeedbacksCount > 0 ? totalRatingSum / totalFeedbacksCount : 0
+
+      const today = new Date().toISOString().split("T")[0]
+      const newFeedbacksToday = allFeedbacks.filter(
+        (f) => new Date(f.created_at).toISOString().split("T")[0] === today,
+      ).length
+
+      const employeesWithFeedback = new Set(allFeedbacks.map((f) => f.employee_id))
+      const employeesWithZeroFeedback = allEmployees.filter((emp) => !employeesWithFeedback.has(emp.id)).length
+
+      // Placeholder for urgent issues - this would typically come from specific feedback flagging or sentiment analysis
+      const urgentIssues = allFeedbacks.filter(
+        (f) => f.rating <= 1 && f.comment && f.comment.toLowerCase().includes("urgent"),
+      ).length
+
+      setKeyMetrics({
+        avgRating: Number.parseFloat(avgRating.toFixed(1)),
+        responseRate: 75, // Placeholder, would need more data to calculate
+        totalFeedbacks: totalFeedbacksCount,
+        activeEmployees: allEmployees.length,
+        newFeedbacksToday: newFeedbacksToday,
+        employeesWithZeroFeedback: employeesWithZeroFeedback,
+        urgentIssues: urgentIssues,
+      })
     } catch (error) {
       console.error("Error fetching insights data:", error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const getStartDate = (timeframe: string) => {
+    const date = new Date()
+    switch (timeframe) {
+      case "7d":
+        date.setDate(date.getDate() - 7)
+        break
+      case "30d":
+        date.setDate(date.getDate() - 30)
+        break
+      case "90d":
+        date.setDate(date.getDate() - 90)
+        break
+      case "365d":
+        date.setFullYear(date.getFullYear() - 1)
+        break
+      default:
+        break
+    }
+    return date.toISOString()
   }
 
   const PIE_COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"]
@@ -105,35 +225,53 @@ export default function InsightsPage() {
 
         <nav className="space-y-2">
           <Link href="/dashboard">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Home className="mr-3 h-4 w-4" />
               Dashboard
             </Button>
           </Link>
           <Link href="/dashboard/employees">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Users className="mr-3 h-4 w-4" />
               Employés
             </Button>
           </Link>
           <Link href="/dashboard/feedbacks">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <MessageSquare className="mr-3 h-4 w-4" />
               Feedbacks
             </Button>
           </Link>
           <Link href="/dashboard/qr-codes">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <QrCode className="mr-3 h-4 w-4" />
               QR Codes
             </Button>
           </Link>
-          <Button variant="ghost" className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button
+            variant="ghost"
+            className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+          >
             <BarChart3 className="mr-3 h-4 w-4" />
             Insight
           </Button>
           <Link href="/dashboard/settings">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Settings className="mr-3 h-4 w-4" />
               Paramètres
             </Button>
@@ -212,7 +350,8 @@ export default function InsightsPage() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <Badge variant="secondary" className="text-sm">
-                          {employee.avg_rating.toFixed(1)} <Star className="h-3 w-3 ml-1 fill-yellow-400 text-yellow-400" />
+                          {employee.avg_rating.toFixed(1)}{" "}
+                          <Star className="h-3 w-3 ml-1 fill-yellow-400 text-yellow-400" />
                         </Badge>
                         <span className="text-muted-foreground text-sm">({employee.feedback_count} feedbacks)</span>
                       </div>
@@ -233,26 +372,19 @@ export default function InsightsPage() {
               <CardContent className="grid grid-cols-2 gap-4">
                 <div className="text-center">
                   <p className="text-muted-foreground text-sm">Note Moyenne</p>
-                  <p className="text-2xl font-bold text-primary">
-                    {(feedbackTrends.reduce((sum, t) => sum + t.positive * 5 + t.neutral * 3 + t.negative * 1, 0) /
-                      feedbackTrends.reduce((sum, t) => sum + t.positive + t.neutral + t.negative, 0) || 0).toFixed(1)}
-                  </p>
+                  <p className="text-2xl font-bold text-primary">{keyMetrics.avgRating}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-muted-foreground text-sm">Taux de Réponse</p>
-                  <p className="text-2xl font-bold text-primary">75%</p>
+                  <p className="text-2xl font-bold text-primary">{keyMetrics.responseRate}%</p>
                 </div>
                 <div className="text-center">
                   <p className="text-muted-foreground text-sm">Feedbacks Totaux</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {feedbackTrends.reduce((sum, t) => sum + t.positive + t.neutral + t.negative, 0)}
-                  </p>
+                  <p className="text-2xl font-bold text-foreground">{keyMetrics.totalFeedbacks}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-muted-foreground text-sm">Employés Actifs</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {topEmployees.length}
-                  </p>
+                  <p className="text-2xl font-bold text-foreground">{keyMetrics.activeEmployees}</p>
                 </div>
               </CardContent>
             </Card>
@@ -302,15 +434,15 @@ export default function InsightsPage() {
               <CardContent className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Nouveaux feedbacks aujourd'hui:</span>
-                  <span className="font-bold text-foreground">5</span>
+                  <span className="font-bold text-foreground">{keyMetrics.newFeedbacksToday}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Employés avec 0 feedback:</span>
-                  <span className="font-bold text-foreground">2</span>
+                  <span className="font-bold text-foreground">{keyMetrics.employeesWithZeroFeedback}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Problèmes urgents:</span>
-                  <span className="font-bold text-destructive">1</span>
+                  <span className="font-bold text-destructive">{keyMetrics.urgentIssues}</span>
                 </div>
               </CardContent>
             </Card>

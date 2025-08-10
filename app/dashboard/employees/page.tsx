@@ -9,15 +9,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, Edit, Trash2, QrCode, Users, Home, MessageSquare, BarChart3, Settings, User, Building } from 'lucide-react'
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  QrCode,
+  Users,
+  Home,
+  MessageSquare,
+  BarChart3,
+  Settings,
+  User,
+  Building,
+} from "lucide-react"
 import { Logo } from "@/components/logo"
-import { createClient } from "@supabase/supabase-js"
+import { supabase } from "@/lib/supabase" // Use the client-side Supabase client
 import Link from "next/link"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-)
 
 interface Employee {
   id: string
@@ -54,61 +62,14 @@ export default function EmployeesPage() {
 
   const fetchEmployees = async () => {
     try {
-      // Mock data - replace with actual Supabase query
-      const mockEmployees: Employee[] = [
-        {
-          id: "1",
-          cin_number: "AB123456",
-          full_name: "Mohammed Benali",
-          position: "Serveur",
-          department: "Restaurant",
-          photo_url: "/placeholder.svg?height=40&width=40",
-          hire_date: "2023-01-15",
-          created_at: "2023-01-15T10:00:00Z",
-        },
-        {
-          id: "2",
-          cin_number: "CD789012",
-          full_name: "Sarah Khalil",
-          position: "Caissière",
-          department: "Vente",
-          photo_url: "/placeholder.svg?height=40&width=40",
-          hire_date: "2023-02-20",
-          created_at: "2023-02-20T10:00:00Z",
-        },
-        {
-          id: "3",
-          cin_number: "EF345678",
-          full_name: "Meriem Alami",
-          position: "Conseillère",
-          department: "Service Client",
-          photo_url: "/placeholder.svg?height=40&width=40",
-          hire_date: "2023-03-10",
-          created_at: "2023-03-10T10:00:00Z",
-        },
-        {
-          id: "4",
-          cin_number: "GH901234",
-          full_name: "Ahmed Tazi",
-          position: "Chef de Cuisine",
-          department: "Restaurant",
-          photo_url: "/placeholder.svg?height=40&width=40",
-          hire_date: "2022-11-05",
-          created_at: "2022-11-05T10:00:00Z",
-        },
-        {
-          id: "5",
-          cin_number: "IJ567890",
-          full_name: "Fatima Zahra",
-          position: "Responsable RH",
-          department: "Administration",
-          photo_url: "/placeholder.svg?height=40&width=40",
-          hire_date: "2022-08-12",
-          created_at: "2022-08-12T10:00:00Z",
-        },
-      ]
+      setLoading(true)
+      const { data, error } = await supabase.from("employees").select("*").order("created_at", { ascending: false })
 
-      setEmployees(mockEmployees)
+      if (error) {
+        console.error("Error fetching employees:", error)
+        return
+      }
+      setEmployees(data as Employee[])
     } catch (error) {
       console.error("Error fetching employees:", error)
     } finally {
@@ -118,13 +79,25 @@ export default function EmployeesPage() {
 
   const handleAddEmployee = async () => {
     try {
-      const newEmployee: Employee = {
-        id: Date.now().toString(),
-        ...formData,
-        created_at: new Date().toISOString(),
-      }
+      const { data, error } = await supabase
+        .from("employees")
+        .insert([
+          {
+            cin_number: formData.cin_number,
+            full_name: formData.full_name,
+            position: formData.position,
+            department: formData.department || null,
+            photo_url: formData.photo_url || null,
+            hire_date: formData.hire_date || null,
+          },
+        ])
+        .select()
 
-      setEmployees([...employees, newEmployee])
+      if (error) {
+        console.error("Error adding employee:", error)
+        return
+      }
+      setEmployees((prev) => [data[0] as Employee, ...prev])
       setShowAddDialog(false)
       resetForm()
     } catch (error) {
@@ -136,9 +109,24 @@ export default function EmployeesPage() {
     if (!editingEmployee) return
 
     try {
-      const updatedEmployees = employees.map((emp) => (emp.id === editingEmployee.id ? { ...emp, ...formData } : emp))
+      const { data, error } = await supabase
+        .from("employees")
+        .update({
+          cin_number: formData.cin_number,
+          full_name: formData.full_name,
+          position: formData.position,
+          department: formData.department || null,
+          photo_url: formData.photo_url || null,
+          hire_date: formData.hire_date || null,
+        })
+        .eq("id", editingEmployee.id)
+        .select()
 
-      setEmployees(updatedEmployees)
+      if (error) {
+        console.error("Error updating employee:", error)
+        return
+      }
+      setEmployees((prev) => prev.map((emp) => (emp.id === editingEmployee.id ? (data[0] as Employee) : emp)))
       setEditingEmployee(null)
       resetForm()
     } catch (error) {
@@ -148,7 +136,17 @@ export default function EmployeesPage() {
 
   const handleDeleteEmployee = async (id: string) => {
     if (confirm("Êtes-vous sûr de vouloir supprimer cet employé ?")) {
-      setEmployees(employees.filter((emp) => emp.id !== id))
+      try {
+        const { error } = await supabase.from("employees").delete().eq("id", id)
+
+        if (error) {
+          console.error("Error deleting employee:", error)
+          return
+        }
+        setEmployees((prev) => prev.filter((emp) => emp.id !== id))
+      } catch (error) {
+        console.error("Error deleting employee:", error)
+      }
     }
   }
 
@@ -206,29 +204,44 @@ export default function EmployeesPage() {
 
         <nav className="space-y-2">
           <Link href="/dashboard">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Home className="mr-3 h-4 w-4" />
               Dashboard
             </Button>
           </Link>
-          <Button variant="ghost" className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button
+            variant="ghost"
+            className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+          >
             <Users className="mr-3 h-4 w-4" />
             Employés
           </Button>
           <Link href="/dashboard/feedbacks">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <MessageSquare className="mr-3 h-4 w-4" />
               Feedbacks
             </Button>
           </Link>
           <Link href="/dashboard/insights">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <BarChart3 className="mr-3 h-4 w-4" />
               Insight
             </Button>
           </Link>
           <Link href="/dashboard/settings">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Settings className="mr-3 h-4 w-4" />
               Paramètres
             </Button>
@@ -408,7 +421,7 @@ export default function EmployeesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm">Nouveaux ce mois</p>
-                  <p className="text-2xl font-bold text-foreground">3</p>
+                  <p className="text-2xl font-bold text-foreground">3</p> {/* This remains hardcoded for now */}
                 </div>
                 <User className="h-8 w-8 text-green-400" />
               </div>
@@ -420,7 +433,8 @@ export default function EmployeesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm">QR Codes</p>
-                  <p className="text-2xl font-bold text-foreground">{employees.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{employees.length}</p>{" "}
+                  {/* This assumes 1 QR per employee */}
                 </div>
                 <QrCode className="h-8 w-8 text-yellow-400" />
               </div>
