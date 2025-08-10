@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BarChart3, Users, Home, MessageSquare, Settings, TrendingUp, Star, Building, QrCode } from 'lucide-react'
+import { Badge } from "@/components/ui/badge"
 import { Logo } from "@/components/logo"
 import { createClient } from "@supabase/supabase-js"
 import Link from "next/link"
