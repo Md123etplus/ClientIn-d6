@@ -6,15 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MessageSquare, Search, Filter, Star, Users, Home, BarChart3, Settings, MoreHorizontal, Calendar, QrCode } from 'lucide-react'
+import { MessageSquare, Search, Filter, Star, Users, Home, BarChart3, Settings, QrCode } from "lucide-react"
 import { Logo } from "@/components/logo"
-import { createClient } from "@supabase/supabase-js"
+import { supabase } from "@/lib/supabase" // Use the client-side Supabase client
 import Link from "next/link"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-)
 
 interface Employee {
   id: string
@@ -33,7 +28,7 @@ interface Feedback {
   created_at: string
   source: "nfc" | "qr" | "direct"
   device_info: any // Simplified for mock
-  employee?: Employee
+  employee?: Employee // Joined employee data
 }
 
 export default function FeedbacksPage() {
@@ -49,90 +44,26 @@ export default function FeedbacksPage() {
 
   const fetchFeedbacks = async () => {
     try {
-      // Mock data - replace with actual Supabase query
-      const mockFeedbacks: Feedback[] = [
-        {
-          id: "f1",
-          employee_id: "1",
-          rating: 5,
-          comment: "Excellent service, très rapide et efficace !",
-          created_at: "2024-07-28T10:30:00Z",
-          source: "nfc",
-          device_info: {},
-          employee: {
-            id: "1",
-            cin_number: "AB123456",
-            full_name: "Mohammed Benali",
-            position: "Serveur",
-            department: "Restaurant",
-          },
-        },
-        {
-          id: "f2",
-          employee_id: "2",
-          rating: 4,
-          comment: "Très bien, mais un peu d'attente.",
-          created_at: "2024-07-27T15:00:00Z",
-          source: "qr",
-          device_info: {},
-          employee: {
-            id: "2",
-            cin_number: "CD789012",
-            full_name: "Sarah Khalil",
-            position: "Caissière",
-            department: "Vente",
-          },
-        },
-        {
-          id: "f3",
-          employee_id: "3",
-          rating: 2,
-          comment: "Déçu par la qualité du produit.",
-          created_at: "2024-07-26T09:45:00Z",
-          source: "direct",
-          device_info: {},
-          employee: {
-            id: "3",
-            cin_number: "EF345678",
-            full_name: "Meriem Alami",
-            position: "Conseillère",
-            department: "Service Client",
-          },
-        },
-        {
-          id: "f4",
-          employee_id: "1",
-          rating: 5,
-          comment: "Toujours au top !",
-          created_at: "2024-07-25T11:00:00Z",
-          source: "nfc",
-          device_info: {},
-          employee: {
-            id: "1",
-            cin_number: "AB123456",
-            full_name: "Mohammed Benali",
-            position: "Serveur",
-            department: "Restaurant",
-          },
-        },
-        {
-          id: "f5",
-          employee_id: "4",
-          rating: 1,
-          comment: "Expérience très négative, à améliorer.",
-          created_at: "2024-07-24T18:20:00Z",
-          source: "qr",
-          device_info: {},
-          employee: {
-            id: "4",
-            cin_number: "GH901234",
-            full_name: "Ahmed Tazi",
-            position: "Chef de Cuisine",
-            department: "Restaurant",
-          },
-        },
-      ]
-      setFeedbacks(mockFeedbacks)
+      setLoading(true)
+      const { data, error } = await supabase
+        .from("feedbacks")
+        .select(`
+          *,
+          employee:employees (
+            id,
+            cin_number,
+            full_name,
+            position,
+            department
+          )
+        `)
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("Error fetching feedbacks:", error)
+        return
+      }
+      setFeedbacks(data as Feedback[])
     } catch (error) {
       console.error("Error fetching feedbacks:", error)
     } finally {
@@ -187,35 +118,53 @@ export default function FeedbacksPage() {
 
         <nav className="space-y-2">
           <Link href="/dashboard">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Home className="mr-3 h-4 w-4" />
               Dashboard
             </Button>
           </Link>
           <Link href="/dashboard/employees">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Users className="mr-3 h-4 w-4" />
               Employés
             </Button>
           </Link>
-          <Button variant="ghost" className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button
+            variant="ghost"
+            className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+          >
             <MessageSquare className="mr-3 h-4 w-4" />
             Feedbacks
           </Button>
           <Link href="/dashboard/qr-codes">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <QrCode className="mr-3 h-4 w-4" />
               QR Codes
             </Button>
           </Link>
           <Link href="/dashboard/insights">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <BarChart3 className="mr-3 h-4 w-4" />
               Insight
             </Button>
           </Link>
           <Link href="/dashboard/settings">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Settings className="mr-3 h-4 w-4" />
               Paramètres
             </Button>
@@ -299,9 +248,7 @@ export default function FeedbacksPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm">Feedbacks Positifs</p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {feedbacks.filter((f) => f.rating >= 4).length}
-                  </p>
+                  <p className="text-3xl font-bold text-foreground">{feedbacks.filter((f) => f.rating >= 4).length}</p>
                 </div>
                 <Star className="w-12 h-12 text-green-500 fill-green-500" />
               </div>
@@ -313,9 +260,7 @@ export default function FeedbacksPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm">Feedbacks Négatifs</p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {feedbacks.filter((f) => f.rating <= 2).length}
-                  </p>
+                  <p className="text-3xl font-bold text-foreground">{feedbacks.filter((f) => f.rating <= 2).length}</p>
                 </div>
                 <Star className="w-12 h-12 text-red-500" />
               </div>
@@ -349,9 +294,7 @@ export default function FeedbacksPage() {
                     <p className="text-foreground font-medium mb-1">
                       Employé: {feedback.employee?.full_name || "N/A"} (CIN: {feedback.employee?.cin_number || "N/A"})
                     </p>
-                    <p className="text-muted-foreground text-sm italic">
-                      {feedback.comment || "Pas de commentaire."}
-                    </p>
+                    <p className="text-muted-foreground text-sm italic">{feedback.comment || "Pas de commentaire."}</p>
                   </div>
                 ))
               )}

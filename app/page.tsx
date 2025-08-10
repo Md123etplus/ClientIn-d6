@@ -4,14 +4,21 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Smartphone, Wifi, BarChart3, Moon, Sun, ArrowRight, Zap, Shield, Globe, ChevronDown, Play } from 'lucide-react'
+import { Smartphone, Wifi, BarChart3, Moon, Sun, ArrowRight, Zap, Shield, Globe, ChevronDown, Play } from "lucide-react"
 import { Logo } from "@/components/logo"
 import { LoadingScreen } from "@/components/loading-screen"
 import { FloatingNFCCard } from "@/components/floating-nfc-card"
 import { useTheme } from "next-themes"
+import { useRouter } from "next/navigation"
+import { createClientComponentClient } from "@supabase/supabase-js"
 
 export default function HomePage() {
   const { theme, setTheme } = useTheme()
+  const router = useRouter()
+  const supabase = createClientComponentClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  })
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
 
@@ -21,8 +28,24 @@ export default function HomePage() {
       setLoading(false)
     }, 4000)
 
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (user) {
+        router.push("/dashboard")
+      } else {
+        router.push("/login")
+      }
+    }
+
+    if (!mounted) {
+      checkUser()
+    }
+
     return () => clearTimeout(timer)
-  }, [])
+  }, [router, supabase.auth, mounted])
 
   if (loading) {
     return <LoadingScreen />
@@ -260,7 +283,9 @@ export default function HomePage() {
       <footer className="bg-background text-foreground py-16 border-t border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Logo className="h-12 mb-6" />
-          <p className="text-muted-foreground mb-6 text-lg">Révolutionnez votre feedback client avec la technologie NFC</p>
+          <p className="text-muted-foreground mb-6 text-lg">
+            Révolutionnez votre feedback client avec la technologie NFC
+          </p>
           <div className="flex justify-center space-x-8 mb-8">
             <Globe className="w-6 h-6 text-muted-foreground" />
             <Shield className="w-6 h-6 text-muted-foreground" />

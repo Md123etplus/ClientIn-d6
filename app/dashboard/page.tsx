@@ -6,17 +6,26 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { Home, Users, MessageSquare, BarChart3, Settings, Search, Bell, MoreHorizontal, TrendingUp, User, Calendar, ArrowRight, QrCode } from 'lucide-react'
+import {
+  Home,
+  Users,
+  MessageSquare,
+  BarChart3,
+  Settings,
+  Search,
+  Bell,
+  MoreHorizontal,
+  TrendingUp,
+  User,
+  Calendar,
+  ArrowRight,
+  QrCode,
+} from "lucide-react"
 
 import { Logo } from "@/components/logo"
-import { createClient } from "@supabase/supabase-js"
+import { supabase } from "@/lib/supabase" // Use the client-side Supabase client
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-)
 
 interface Employee {
   id: string
@@ -75,115 +84,51 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      // Mock data - replace with actual Supabase queries
-      const mockFeedbacks: Feedback[] = [
-        {
-          id: "1",
-          employee_id: "1",
-          rating: 5,
-          comment: "Excellent service!",
-          created_at: "2024-01-15T10:30:00Z",
-          employee: {
-            id: "1",
-            cin_number: "AB123456",
-            full_name: "Mohammed B",
-            position: "Serveur",
-            department: "Restaurant",
-          },
-        },
-        {
-          id: "2",
-          employee_id: "2",
-          rating: 4,
-          comment: "Très bien",
-          created_at: "2024-01-15T09:15:00Z",
-          employee: {
-            id: "2",
-            cin_number: "CD789012",
-            full_name: "Sarah K",
-            position: "Caissière",
-            department: "Vente",
-          },
-        },
-        {
-          id: "3",
-          employee_id: "3",
-          rating: 2,
-          comment: "Service lent",
-          created_at: "2024-01-14T16:45:00Z",
-          employee: {
-            id: "3",
-            cin_number: "EF345678",
-            full_name: "Meriem al",
-            position: "Conseillère",
-            department: "Service Client",
-          },
-        },
-      ]
+      setLoading(true)
 
-      const mockEmployees: Employee[] = [
-        {
-          id: "1",
-          cin_number: "AB123456",
-          full_name: "Alfredo",
-          position: "Serveur",
-          photo_url: "/placeholder.svg?height=40&width=40",
-        },
-        {
-          id: "2",
-          cin_number: "CD789012",
-          full_name: "Claudia",
-          position: "Caissière",
-          photo_url: "/placeholder.svg?height=40&width=40",
-        },
-        {
-          id: "3",
-          cin_number: "EF345678",
-          full_name: "Canaya",
-          position: "Conseillère",
-          photo_url: "/placeholder.svg?height=40&width=40",
-        },
-        {
-          id: "4",
-          cin_number: "GH901234",
-          full_name: "Mariana",
-          position: "Chef",
-          photo_url: "/placeholder.svg?height=40&width=40",
-        },
-        {
-          id: "5",
-          cin_number: "IJ567890",
-          full_name: "Marceline",
-          position: "Manager",
-          photo_url: "/placeholder.svg?height=40&width=40",
-        },
-        {
-          id: "6",
-          cin_number: "KL234567",
-          full_name: "Teddy",
-          position: "Serveur",
-          photo_url: "/placeholder.svg?height=40&width=40",
-        },
-        {
-          id: "7",
-          cin_number: "MN890123",
-          full_name: "Yael",
-          position: "Hôtesse",
-          photo_url: "/placeholder.svg?height=40&width=40",
-        },
-      ]
+      // Fetch feedbacks with employee details
+      const { data: feedbacksData, error: feedbacksError } = await supabase
+        .from("feedbacks")
+        .select(`
+          *,
+          employee:employees (
+            id,
+            cin_number,
+            full_name,
+            position,
+            department,
+            photo_url
+          )
+        `)
+        .order("created_at", { ascending: false })
+        .limit(5) // Limit to recent feedbacks
 
-      setRecentFeedbacks(mockFeedbacks)
-      setEmployees(mockEmployees)
+      if (feedbacksError) {
+        console.error("Error fetching feedbacks:", feedbacksError)
+        return
+      }
+      setRecentFeedbacks(feedbacksData as Feedback[])
 
-      const positive = mockFeedbacks.filter((f) => f.rating >= 4).length
-      const negative = mockFeedbacks.filter((f) => f.rating <= 2).length
+      // Fetch employees
+      const { data: employeesData, error: employeesError } = await supabase.from("employees").select("*")
+
+      if (employeesError) {
+        console.error("Error fetching employees:", employeesError)
+        return
+      }
+      setEmployees(employeesData as Employee[])
+
+      // Calculate stats
+      const totalFeedbacks = feedbacksData.length
+      const positiveFeedbacks = feedbacksData.filter((f) => f.rating >= 4).length
+      const negativeFeedbacks = feedbacksData.filter((f) => f.rating <= 2).length
+      const activeEmployees = employeesData.length
 
       setStats({
-        totalFeedbacks: mockFeedbacks.length,
-        positiveFeedbacks: positive,
-        negativeFeedbacks: negative,
-        activeEmployees: mockEmployees.length,
+        totalFeedbacks,
+        positiveFeedbacks,
+        negativeFeedbacks,
+        activeEmployees,
       })
     } catch (error) {
       console.error("Error fetching dashboard data:", error)
@@ -202,26 +147,29 @@ export default function DashboardPage() {
     const now = new Date()
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
 
-    if (diffInHours < 1) return "Aujourd'hui, 10:00 AM"
-    if (diffInHours < 24) return "Yesterday, 4:00 AM"
-    return "1 Month Ago, 4:00 PM"
+    if (diffInHours < 1)
+      return "Aujourd'hui, " + date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+    if (diffInHours < 24) return "Hier, " + date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+    return (
+      date.toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" }) +
+      ", " +
+      date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+    )
   }
 
   const getDateLabel = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
 
-    if (diffInHours < 24) return "Auj"
-    return "Hier"
+    if (diffInDays === 0) return "Auj"
+    if (diffInDays === 1) return "Hier"
+    return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })
   }
 
   const getTimeLabel = (dateString: string) => {
     const date = new Date(dateString)
-    const diffInHours = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60))
-
-    if (diffInHours < 24) return "10H"
-    return "14H"
+    return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).split(":")[0] + "H"
   }
 
   if (loading) {
@@ -242,37 +190,55 @@ export default function DashboardPage() {
 
         <nav className="space-y-2">
           <Link href="/dashboard">
-            <Button variant="ghost" className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button
+              variant="ghost"
+              className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+            >
               <Home className="mr-3 h-4 w-4" />
               Dashboard
             </Button>
           </Link>
           <Link href="/dashboard/employees">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Users className="mr-3 h-4 w-4" />
               Employés
             </Button>
           </Link>
           <Link href="/dashboard/feedbacks">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <MessageSquare className="mr-3 h-4 w-4" />
               Feedbacks
             </Button>
           </Link>
           <Link href="/dashboard/qr-codes">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <QrCode className="mr-3 h-4 w-4" />
               QR Codes
             </Button>
           </Link>
           <Link href="/dashboard/insights">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <BarChart3 className="mr-3 h-4 w-4" />
               Insight
             </Button>
           </Link>
           <Link href="/dashboard/settings">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Settings className="mr-3 h-4 w-4" />
               Paramètres
             </Button>
@@ -285,7 +251,9 @@ export default function DashboardPage() {
             <CardContent className="p-4">
               <h3 className="font-bold text-primary-foreground mb-1">UPGRADE</h3>
               <h4 className="font-bold text-primary-foreground mb-2">CLIENTIN PRO</h4>
-              <p className="text-xs text-primary-foreground/80 mb-4">Débloquez des rapports avancés, des intégrations CRM...</p>
+              <p className="text-xs text-primary-foreground/80 mb-4">
+                Débloquez des rapports avancés, des intégrations CRM...
+              </p>
               <div className="text-right">
                 <ArrowRight className="h-6 w-6 text-primary-foreground ml-auto" />
               </div>
@@ -310,9 +278,14 @@ export default function DashboardPage() {
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               <Bell className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-foreground">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-foreground"
+            >
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder.svg?height=32&width=32" />
+                <AvatarImage src={user?.user_metadata?.avatar_url || "/placeholder.svg?height=32&width=32"} />
                 <AvatarFallback>
                   <User className="h-4 w-4" />
                 </AvatarFallback>
@@ -367,7 +340,7 @@ export default function DashboardPage() {
                   {recentFeedbacks.map((feedback) => (
                     <div key={feedback.id} className="grid grid-cols-4 gap-4 items-center py-2">
                       <div>
-                        <p className="text-foreground font-medium">{feedback.employee?.full_name}</p>
+                        <p className="text-foreground font-medium">{feedback.employee?.full_name || "N/A"}</p>
                         <p className="text-muted-foreground text-sm">{formatDate(feedback.created_at)}</p>
                       </div>
                       <div>

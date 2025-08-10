@@ -8,8 +8,24 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { QrCode, Download, Eye, Palette, RefreshCw, Copy, Check, Users, Home, MessageSquare, BarChart3, Settings, Search, TrendingUp } from 'lucide-react'
+import {
+  QrCode,
+  Download,
+  Eye,
+  Palette,
+  RefreshCw,
+  Copy,
+  Check,
+  Users,
+  Home,
+  MessageSquare,
+  BarChart3,
+  Settings,
+  Search,
+  TrendingUp,
+} from "lucide-react"
 import { Logo } from "@/components/logo"
+import { supabase } from "@/lib/supabase" // Use the client-side Supabase client
 import Link from "next/link"
 
 interface Employee {
@@ -49,56 +65,54 @@ export default function QRCodesPage() {
   const [searchTerm, setSearchTerm] = useState("")
 
   useEffect(() => {
-    fetchEmployees()
+    fetchEmployeesAndQRCodes()
   }, [])
 
-  const fetchEmployees = async () => {
+  const fetchEmployeesAndQRCodes = async () => {
     try {
-      // Mock data - replace with actual Supabase query
-      const mockEmployees: Employee[] = [
-        {
-          id: "1",
-          cin_number: "AB123456",
-          full_name: "Mohammed Benali",
-          position: "Serveur",
-          department: "Restaurant",
-          photo_url: "/placeholder.svg?height=40&width=40",
-          qr_code_id: "QR001",
-          qr_code_url: `${window.location.origin}/feedback?id=1&source=qr`,
-          qr_code_style: { color: "#2563eb", background: "#ffffff", logo: true }, // Pure blue and white
-          qr_scans: 24,
-        },
-        {
-          id: "2",
-          cin_number: "CD789012",
-          full_name: "Sarah Khalil",
-          position: "Caissière",
-          department: "Vente",
-          photo_url: "/placeholder.svg?height=40&width=40",
-          qr_code_id: "QR002",
-          qr_code_url: `${window.location.origin}/feedback?id=2&source=qr`,
-          qr_code_style: { color: "#2563eb", background: "#ffffff", logo: true }, // Pure blue and white
-          qr_scans: 18,
-        },
-        {
-          id: "3",
-          cin_number: "EF345678",
-          full_name: "Meriem Alami",
-          position: "Conseillère",
-          department: "Service Client",
-          photo_url: "/placeholder.svg?height=40&width=40",
-          qr_code_id: "QR003",
-          qr_code_url: `${window.location.origin}/feedback?id=3&source=qr`,
-          qr_code_style: { color: "#2563eb", background: "#ffffff", logo: true }, // Pure blue and white
-          qr_scans: 31,
-        },
-      ]
+      setLoading(true)
+      const { data: employeesData, error: employeesError } = await supabase
+        .from("employees")
+        .select(`
+          *,
+          qr_codes (
+            id,
+            qr_code_url,
+            qr_code_style,
+            scan_count
+          )
+        `)
+        .order("created_at", { ascending: false })
 
-      setEmployees(mockEmployees)
+      if (employeesError) {
+        console.error("Error fetching employees with QR codes:", employeesError)
+        return
+      }
 
-      const total = mockEmployees.length
-      const scanned = mockEmployees.filter((emp) => (emp.qr_scans || 0) > 0).length
-      const generated = mockEmployees.filter((emp) => emp.qr_code_id).length
+      const mappedEmployees: Employee[] = employeesData.map((emp: any) => ({
+        id: emp.id,
+        cin_number: emp.cin_number,
+        full_name: emp.full_name,
+        position: emp.position,
+        department: emp.department,
+        photo_url: emp.photo_url,
+        hire_date: emp.hire_date,
+        created_at: emp.created_at,
+        qr_code_id: emp.qr_codes ? emp.qr_codes.id : undefined,
+        qr_code_url: emp.qr_codes
+          ? emp.qr_codes.qr_code_url
+          : `${window.location.origin}/feedback?id=${emp.id}&source=qr`,
+        qr_code_style: emp.qr_codes
+          ? emp.qr_codes.qr_code_style
+          : { color: "#2563eb", background: "#ffffff", logo: true },
+        qr_scans: emp.qr_codes ? emp.qr_codes.scan_count : 0,
+      }))
+
+      setEmployees(mappedEmployees)
+
+      const total = mappedEmployees.length
+      const scanned = mappedEmployees.filter((emp) => (emp.qr_scans || 0) > 0).length
+      const generated = mappedEmployees.filter((emp) => emp.qr_code_id).length
 
       setStats({ total, scanned, generated })
     } catch (error) {
@@ -108,7 +122,7 @@ export default function QRCodesPage() {
     }
   }
 
-  const generateQRCode = (employee: Employee, style = qrStyle) => {
+  const generateQRCodeImage = (employee: Employee, style = qrStyle) => {
     const size = 300
     const data = encodeURIComponent(employee.qr_code_url || "")
     const color = style.color.replace("#", "")
@@ -128,13 +142,79 @@ export default function QRCodesPage() {
   }
 
   const downloadQRCode = (employee: Employee) => {
-    const qrUrl = generateQRCode(employee, employee.qr_code_style)
+    const qrUrl = generateQRCodeImage(employee, employee.qr_code_style)
     const link = document.createElement("a")
     link.href = qrUrl
     link.download = `qr-code-${employee.full_name.replace(/\s+/g, "-").toLowerCase()}.png`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  const handleSaveQrStyle = async () => {
+    if (!selectedEmployee) return
+
+    try {
+      const { data, error } = await supabase
+        .from("qr_codes")
+        .upsert(
+          {
+            employee_id: selectedEmployee.id,
+            qr_code_url: selectedEmployee.qr_code_url,
+            qr_code_style: qrStyle,
+            id: selectedEmployee.qr_code_id || undefined, // Use existing ID if available for update
+          },
+          { onConflict: "employee_id" },
+        ) // Upsert based on employee_id
+        .select()
+
+      if (error) {
+        console.error("Error saving QR style:", error)
+        return
+      }
+
+      // Update local state with the new QR style and ID if it was an insert
+      setEmployees((prev) =>
+        prev.map((emp) =>
+          emp.id === selectedEmployee.id ? { ...emp, qr_code_style: qrStyle, qr_code_id: data[0].id } : emp,
+        ),
+      )
+      setSelectedEmployee(null) // Close dialog
+    } catch (error) {
+      console.error("Error saving QR style:", error)
+    }
+  }
+
+  const handleRegenerateAll = async () => {
+    if (
+      !confirm("Êtes-vous sûr de vouloir régénérer tous les QR codes ? Cela réinitialisera les styles personnalisés.")
+    ) {
+      return
+    }
+
+    setLoading(true)
+    try {
+      for (const employee of employees) {
+        const defaultStyle = { color: "#2563eb", background: "#ffffff", logo: true }
+        const defaultQrUrl = `${window.location.origin}/feedback?id=${employee.id}&source=qr`
+
+        await supabase.from("qr_codes").upsert(
+          {
+            employee_id: employee.id,
+            qr_code_url: defaultQrUrl,
+            qr_code_style: defaultStyle,
+            id: employee.qr_code_id || undefined,
+            scan_count: 0, // Reset scan count on regeneration
+          },
+          { onConflict: "employee_id" },
+        )
+      }
+      await fetchEmployeesAndQRCodes() // Re-fetch all data to update UI
+    } catch (error) {
+      console.error("Error regenerating all QR codes:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const filteredEmployees = employees.filter(
@@ -162,35 +242,53 @@ export default function QRCodesPage() {
 
         <nav className="space-y-2">
           <Link href="/dashboard">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Home className="mr-3 h-4 w-4" />
               Dashboard
             </Button>
           </Link>
           <Link href="/dashboard/employees">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Users className="mr-3 h-4 w-4" />
               Employés
             </Button>
           </Link>
           <Link href="/dashboard/feedbacks">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <MessageSquare className="mr-3 h-4 w-4" />
               Feedbacks
             </Button>
           </Link>
-          <Button variant="ghost" className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button
+            variant="ghost"
+            className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+          >
             <QrCode className="mr-3 h-4 w-4" />
             QR Codes
           </Button>
           <Link href="/dashboard/insights">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <BarChart3 className="mr-3 h-4 w-4" />
               Insight
             </Button>
           </Link>
           <Link href="/dashboard/settings">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Settings className="mr-3 h-4 w-4" />
               Paramètres
             </Button>
@@ -216,7 +314,7 @@ export default function QRCodesPage() {
                 className="pl-10 bg-muted border-border text-foreground w-64"
               />
             </div>
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button className="bg-primary hover:bg-primary/90" onClick={handleRegenerateAll}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Régénérer Tous
             </Button>
@@ -272,10 +370,7 @@ export default function QRCodesPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredEmployees.map((employee) => (
-                <Card
-                  key={employee.id}
-                  className="bg-muted border-border hover:border-primary/80 transition-colors"
-                >
+                <Card key={employee.id} className="bg-muted border-border hover:border-primary/80 transition-colors">
                   <CardContent className="p-6">
                     {/* Employee Info */}
                     <div className="flex items-center space-x-3 mb-4">
@@ -299,12 +394,12 @@ export default function QRCodesPage() {
                     <div className="bg-white p-4 rounded-lg border-2 border-dashed border-border mb-4">
                       <div className="text-center">
                         <img
-                          src={generateQRCode(employee, employee.qr_code_style) || "/placeholder.svg"}
+                          src={generateQRCodeImage(employee, employee.qr_code_style) || "/placeholder.svg"}
                           alt={`QR Code ${employee.full_name}`}
                           className="w-32 h-32 mx-auto mb-2"
                         />
                         <Badge variant="outline" className="text-xs border-muted-foreground text-muted-foreground">
-                          {employee.qr_code_id}
+                          {employee.qr_code_id || "N/A"}
                         </Badge>
                       </div>
                     </div>
@@ -350,7 +445,9 @@ export default function QRCodesPage() {
                             className="w-full bg-primary hover:bg-primary/90"
                             onClick={() => {
                               setSelectedEmployee(employee)
-                              setQrStyle(employee.qr_code_style || qrStyle)
+                              setQrStyle(
+                                employee.qr_code_style || { color: "#2563eb", background: "#ffffff", logo: true },
+                              )
                             }}
                           >
                             <Palette className="w-4 h-4 mr-2" />
@@ -366,7 +463,7 @@ export default function QRCodesPage() {
                               {/* Preview */}
                               <div className="text-center">
                                 <img
-                                  src={generateQRCode(selectedEmployee, qrStyle) || "/placeholder.svg"}
+                                  src={generateQRCodeImage(selectedEmployee, qrStyle) || "/placeholder.svg"}
                                   alt="QR Code Preview"
                                   className="w-48 h-48 mx-auto border rounded-lg"
                                 />
@@ -419,17 +516,11 @@ export default function QRCodesPage() {
                                 <Button
                                   variant="outline"
                                   className="flex-1 border-border text-muted-foreground hover:bg-accent bg-transparent"
-                                  onClick={() => setQrStyle(selectedEmployee.qr_code_style || qrStyle)}
+                                  onClick={() => setSelectedEmployee(null)} // Close without saving
                                 >
                                   Annuler
                                 </Button>
-                                <Button
-                                  className="flex-1 bg-primary hover:bg-primary/90"
-                                  onClick={() => {
-                                    // Update QR style logic here
-                                    console.log("Updating QR style:", qrStyle)
-                                  }}
-                                >
+                                <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleSaveQrStyle}>
                                   Sauvegarder
                                 </Button>
                               </div>

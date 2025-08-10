@@ -1,36 +1,37 @@
 import { Skeleton } from "@/components/ui/skeleton"
+import { Logo } from "@/components/logo"
 
-export default function SettingsLoading() {
+export default function Loading() {
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Sidebar Skeleton */}
-      <div className="fixed left-0 top-0 h-full w-64 bg-sidebar p-4 flex flex-col">
-        <Skeleton className="h-8 w-3/4 mb-8 bg-secondary" />
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full bg-secondary" />
-          ))}
+      <div className="fixed left-0 top-0 h-full w-64 bg-sidebar p-4">
+        <div className="mb-8">
+          <Logo className="h-8 mb-2" />
         </div>
-        <Skeleton className="h-24 w-full mt-auto bg-primary" />
+        <nav className="space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full rounded-md bg-sidebar-accent" />
+          ))}
+        </nav>
       </div>
 
       {/* Main Content Skeleton */}
-      <div className="ml-64 p-6 flex-1">
+      <div className="ml-64 p-6">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <Skeleton className="h-8 w-64 mb-2 bg-secondary" />
-            <Skeleton className="h-5 w-48 bg-secondary" />
+            <Skeleton className="h-8 w-48 mb-2 bg-muted" />
+            <Skeleton className="h-5 w-80 bg-muted" />
           </div>
-          <Skeleton className="h-10 w-32 bg-primary" />
+          <Skeleton className="h-10 w-48 rounded-md bg-primary" />
         </div>
 
-        {/* Settings Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Skeleton className="h-64 w-full bg-card" /> {/* General Settings */}
-          <Skeleton className="h-48 w-full bg-card" /> {/* Account Settings */}
-          <Skeleton className="h-32 w-full bg-card" /> {/* Notifications */}
-          <Skeleton className="h-48 w-full bg-card" /> {/* Integrations */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Settings Cards Skeletons */}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-64 w-full rounded-lg bg-card" />
+          ))}
         </div>
       </div>
     </div>

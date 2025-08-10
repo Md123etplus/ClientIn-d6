@@ -1,31 +1,12 @@
-"use client"
-
-import { useState, useEffect } from "react"
 import { Logo } from "@/components/logo"
+import { Skeleton } from "@/components/ui/skeleton"
 
-export function LoadingScreen() {
-  const [progress, setProgress] = useState(0)
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(timer)
-          return 100
-        }
-        return prev + 2
-      })
-    }, 80)
-
-    return () => clearInterval(timer)
-  }, [])
-
+export default function LoadingScreen() {
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background">
-      <div className="text-center">
-        <Logo className="h-16 w-auto animate-pulse text-primary" />
-        <p className="mt-4 text-lg font-medium text-foreground">Chargement de ClientIn...</p>
-      </div>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background text-foreground">
+      <Logo className="h-16 w-auto animate-pulse" />
+      <div className="mt-8 text-lg font-medium">Chargement de l'application...</div>
+      <Skeleton className="mt-4 h-4 w-48 animate-pulse rounded-md" />
     </div>
   )
 }

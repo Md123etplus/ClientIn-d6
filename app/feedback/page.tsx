@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Star, Send, CheckCircle, AlertCircle, Wifi, WifiOff } from 'lucide-react'
+import { Star, Send, CheckCircle, AlertCircle, Wifi, WifiOff } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Logo } from "@/components/logo"
+import { supabase } from "@/lib/supabase" // Use the client-side Supabase client
 
 interface Employee {
   id: string
@@ -40,14 +41,23 @@ export default function FeedbackPage() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(true) // Declare the loading variable
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true)
+    const handleOnline = () => {
+      setIsOnline(true)
+      syncPendingFeedbacks()
+    }
     const handleOffline = () => setIsOnline(false)
 
     window.addEventListener("online", handleOnline)
     window.addEventListener("offline", handleOffline)
     setIsOnline(navigator.onLine)
+
+    // Attempt to sync any pending feedbacks on load
+    if (navigator.onLine) {
+      syncPendingFeedbacks()
+    }
 
     return () => {
       window.removeEventListener("online", handleOnline)
@@ -63,19 +73,22 @@ export default function FeedbackPage() {
 
   const fetchEmployee = async (id: string) => {
     try {
-      // Simulate API call - replace with actual Supabase call
-      const mockEmployee: Employee = {
-        id: id,
-        cin_number: "AB123456",
-        full_name: "Mohammed Benali",
-        position: "Serveur",
-        department: "Restaurant",
-        photo_url: "/placeholder.svg?height=100&width=100",
+      const { data, error } = await supabase.from("employees").select("*").eq("id", id).single()
+
+      if (error) {
+        console.error("Error fetching employee:", error)
+        setError("Employé non trouvé")
+        setEmployee(null)
+        setLoading(false) // Set loading to false after fetching
+        return
       }
-      setEmployee(mockEmployee)
+      setEmployee(data as Employee)
+      setLoading(false) // Set loading to false after fetching
     } catch (error) {
       console.error("Error fetching employee:", error)
       setError("Employé non trouvé")
+      setEmployee(null)
+      setLoading(false) // Set loading to false after fetching
     }
   }
 
@@ -86,6 +99,32 @@ export default function FeedbackPage() {
       language: navigator.language,
       screenResolution: `${screen.width}x${screen.height}`,
       timestamp: new Date().toISOString(),
+    }
+  }
+
+  const syncPendingFeedbacks = async () => {
+    const pendingFeedbacks = JSON.parse(localStorage.getItem("pendingFeedbacks") || "[]")
+    if (pendingFeedbacks.length > 0) {
+      console.log("Attempting to sync pending feedbacks:", pendingFeedbacks)
+      for (const feedback of pendingFeedbacks) {
+        try {
+          const { error } = await supabase.from("feedbacks").insert([feedback])
+          if (error) {
+            console.error("Error syncing feedback:", feedback, error)
+          } else {
+            console.log("Successfully synced feedback:", feedback)
+            // Remove synced feedback from local storage
+            const updatedPending = pendingFeedbacks.filter((f: any) => f.id !== feedback.id)
+            localStorage.setItem("pendingFeedbacks", JSON.stringify(updatedPending))
+          }
+        } catch (err) {
+          console.error("Network error during sync:", err)
+        }
+      }
+      // After attempting all, clear local storage if all synced or if there's a persistent issue
+      if (JSON.parse(localStorage.getItem("pendingFeedbacks") || "[]").length === 0) {
+        localStorage.removeItem("pendingFeedbacks")
+      }
     }
   }
 
@@ -109,16 +148,17 @@ export default function FeedbackPage() {
 
     try {
       if (isOnline) {
-        // Submit directly to Supabase
         console.log("Submitting feedback online:", feedbackData)
-        // Replace with actual Supabase call
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        const { error } = await supabase.from("feedbacks").insert([feedbackData])
+        if (error) {
+          throw error
+        }
       } else {
         // Store in localStorage for offline sync
         const pendingFeedbacks = JSON.parse(localStorage.getItem("pendingFeedbacks") || "[]")
         pendingFeedbacks.push({
           ...feedbackData,
-          id: crypto.randomUUID(),
+          id: crypto.randomUUID(), // Assign a unique ID for offline tracking
           created_at: new Date().toISOString(),
         })
         localStorage.setItem("pendingFeedbacks", JSON.stringify(pendingFeedbacks))
@@ -134,7 +174,7 @@ export default function FeedbackPage() {
     }
   }
 
-  if (!employee) {
+  if (!employee && !loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-card border-border">
@@ -190,30 +230,32 @@ export default function FeedbackPage() {
         </div>
 
         {/* Employee Card */}
-        <Card className="mb-6 bg-card border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={employee.photo_url || "/placeholder.svg"} alt={employee.full_name} />
-                <AvatarFallback className="text-lg bg-secondary text-secondary-foreground">
-                  {employee.full_name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold text-foreground">{employee.full_name}</h2>
-                <p className="text-muted-foreground">{employee.position}</p>
-                {employee.department && (
-                  <Badge variant="secondary" className="mt-1">
-                    {employee.department}
-                  </Badge>
-                )}
+        {employee && (
+          <Card className="mb-6 bg-card border-border">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={employee.photo_url || "/placeholder.svg"} alt={employee.full_name} />
+                  <AvatarFallback className="text-lg bg-secondary text-secondary-foreground">
+                    {employee.full_name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-foreground">{employee.full_name}</h2>
+                  <p className="text-muted-foreground">{employee.position}</p>
+                  {employee.department && (
+                    <Badge variant="secondary" className="mt-1">
+                      {employee.department}
+                    </Badge>
+                  )}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Feedback Form */}
         <Card className="bg-card border-border">

@@ -1,48 +1,45 @@
--- Users table (linked to Supabase Auth)
-CREATE TABLE IF NOT EXISTS users (
-  id UUID REFERENCES auth.users ON DELETE CASCADE,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  role VARCHAR(20) CHECK (role IN ('manager', 'admin')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (id)
+-- Create a custom 'users' table to store user roles
+CREATE TABLE IF NOT EXISTS public.users (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT UNIQUE NOT NULL,
+  role TEXT DEFAULT 'user' NOT NULL -- 'manager', 'employee', etc.
 );
 
--- Employee-User association
-ALTER TABLE employees ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id);
+-- Create a trigger to automatically create a user entry when a new auth.user is created
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (id, email)
+  VALUES (NEW.id, NEW.email);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Updated RLS policies with role checking
-DROP POLICY IF EXISTS "Employees access by owner" ON employees;
-DROP POLICY IF EXISTS "Manager access to all employees" ON employees;
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
-CREATE POLICY "Employees access by owner" ON employees FOR SELECT
-USING (user_id = auth.uid());
+-- RLS Policies for 'users' table
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Manager access to all employees"
-ON employees FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM users 
-    WHERE id = auth.uid() AND role = 'manager'
-  )
-);
+-- Allow users to view their own profile
+CREATE POLICY "Users can view their own profile."
+ON public.users FOR SELECT
+USING (auth.uid() = id);
 
--- Allow managers to insert/update employees
-CREATE POLICY "Manager can manage employees" ON employees FOR ALL
-USING (
-  EXISTS (
-    SELECT 1 FROM users 
-    WHERE id = auth.uid() AND role = 'manager'
-  )
-);
+-- Allow managers to view all user profiles
+CREATE POLICY "Managers can view all user profiles."
+ON public.users FOR SELECT
+USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'manager'));
 
--- Function to get user employees
-CREATE OR REPLACE FUNCTION get_user_employees()
-RETURNS SETOF employees AS $$
-  SELECT * FROM employees 
-  WHERE user_id = auth.uid() OR 
-        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'manager');
-$$ LANGUAGE SQL SECURITY DEFINER;
+-- Allow managers to update user roles (e.g., promote to manager)
+CREATE POLICY "Managers can update user roles."
+ON public.users FOR UPDATE
+USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'manager'))
+WITH CHECK (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'manager'));
 
--- Insert sample manager user (you'll need to create this user in Supabase Auth first)
--- INSERT INTO users (id, email, role) VALUES 
--- ('your-auth-user-id', 'manager@clientin.com', 'manager');
+-- Allow managers to delete users (cascades to auth.users)
+CREATE POLICY "Managers can delete users."
+ON public.users FOR DELETE
+USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'manager'));

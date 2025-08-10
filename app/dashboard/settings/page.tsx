@@ -6,44 +6,112 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Settings, Users, Home, MessageSquare, BarChart3, QrCode, Mail, Bell, Key, Palette } from 'lucide-react'
+import { Settings, Users, Home, MessageSquare, BarChart3, QrCode, Key } from "lucide-react"
 import { Logo } from "@/components/logo"
-import { createClient } from "@supabase/supabase-js"
+import { supabase } from "@/lib/supabase" // Use the client-side Supabase client
 import Link from "next/link"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-)
+interface AppSettings {
+  id: string
+  company_name: string
+  contact_email: string
+  notifications_enabled: boolean
+  dark_mode_enabled: boolean
+}
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
-  const [companyName, setCompanyName] = useState("ClientIn Inc.")
-  const [contactEmail, setContactEmail] = useState("contact@clientin.com")
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false) // Assuming this controls a theme setting
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [companyName, setCompanyName] = useState("")
+  const [contactEmail, setContactEmail] = useState("")
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+  const [darkModeEnabled, setDarkModeEnabled] = useState(false)
 
   useEffect(() => {
-    // Simulate fetching settings
-    setTimeout(() => {
-      setLoading(false)
-      // Set initial values from a mock API or local storage
-      setCompanyName("ClientIn Inc.")
-      setContactEmail("contact@clientin.com")
-      setNotificationsEnabled(true)
-      setDarkModeEnabled(false) // Example initial state
-    }, 1000)
+    fetchSettings()
   }, [])
 
-  const handleSaveChanges = () => {
-    console.log("Saving changes:", {
-      companyName,
-      contactEmail,
-      notificationsEnabled,
-      darkModeEnabled,
-    })
-    // Simulate API call to save settings
-    alert("Paramètres sauvegardés!")
+  const fetchSettings = async () => {
+    try {
+      setLoading(true)
+      // Assuming there's only one row for global settings, or fetch by a specific ID
+      const { data, error } = await supabase.from("settings").select("*").limit(1).single()
+
+      if (error && error.code !== "PGRST116") {
+        // PGRST116 means no rows found
+        console.error("Error fetching settings:", error)
+        return
+      }
+
+      if (data) {
+        setSettings(data as AppSettings)
+        setCompanyName(data.company_name)
+        setContactEmail(data.contact_email)
+        setNotificationsEnabled(data.notifications_enabled)
+        setDarkModeEnabled(data.dark_mode_enabled)
+      } else {
+        // If no settings found, initialize with defaults
+        setCompanyName("ClientIn Inc.")
+        setContactEmail("contact@clientin.com")
+        setNotificationsEnabled(true)
+        setDarkModeEnabled(false)
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSaveChanges = async () => {
+    try {
+      if (!settings) {
+        // Insert new settings if none exist
+        const { data, error } = await supabase
+          .from("settings")
+          .insert([
+            {
+              company_name: companyName,
+              contact_email: contactEmail,
+              notifications_enabled: notificationsEnabled,
+              dark_mode_enabled: darkModeEnabled,
+            },
+          ])
+          .select()
+          .single()
+
+        if (error) {
+          console.error("Error inserting settings:", error)
+          alert("Erreur lors de la sauvegarde des paramètres.")
+          return
+        }
+        setSettings(data as AppSettings)
+      } else {
+        // Update existing settings
+        const { data, error } = await supabase
+          .from("settings")
+          .update({
+            company_name: companyName,
+            contact_email: contactEmail,
+            notifications_enabled: notificationsEnabled,
+            dark_mode_enabled: darkModeEnabled,
+          })
+          .eq("id", settings.id)
+          .select()
+          .single()
+
+        if (error) {
+          console.error("Error updating settings:", error)
+          alert("Erreur lors de la sauvegarde des paramètres.")
+          return
+        }
+        setSettings(data as AppSettings)
+      }
+      alert("Paramètres sauvegardés avec succès!")
+    } catch (error) {
+      console.error("Error saving changes:", error)
+      alert("Erreur inattendue lors de la sauvegarde.")
+    }
   }
 
   if (loading) {
@@ -64,36 +132,54 @@ export default function SettingsPage() {
 
         <nav className="space-y-2">
           <Link href="/dashboard">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Home className="mr-3 h-4 w-4" />
               Dashboard
             </Button>
           </Link>
           <Link href="/dashboard/employees">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Users className="mr-3 h-4 w-4" />
               Employés
             </Button>
           </Link>
           <Link href="/dashboard/feedbacks">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <MessageSquare className="mr-3 h-4 w-4" />
               Feedbacks
             </Button>
           </Link>
           <Link href="/dashboard/qr-codes">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <QrCode className="mr-3 h-4 w-4" />
               QR Codes
             </Button>
           </Link>
           <Link href="/dashboard/insights">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <BarChart3 className="mr-3 h-4 w-4" />
               Insight
             </Button>
           </Link>
-          <Button variant="ghost" className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button
+            variant="ghost"
+            className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+          >
             <Settings className="mr-3 h-4 w-4" />
             Paramètres
           </Button>
@@ -158,7 +244,7 @@ export default function SettingsPage() {
                 <Label htmlFor="newPassword">Nouveau mot de passe</Label>
                 <Input id="newPassword" type="password" placeholder="********" className="bg-muted border-border" />
               </div>
-              <Button variant="outline" className="border-border text-muted-foreground hover:bg-accent">
+              <Button variant="outline" className="border-border text-muted-foreground hover:bg-accent bg-transparent">
                 <Key className="mr-2 h-4 w-4" />
                 Changer le mot de passe
               </Button>
@@ -174,11 +260,7 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor="notifications">Activer les notifications par email</Label>
-                <Switch
-                  id="notifications"
-                  checked={notificationsEnabled}
-                  onCheckedChange={setNotificationsEnabled}
-                />
+                <Switch id="notifications" checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
               </div>
               <p className="text-sm text-muted-foreground">
                 Recevez des alertes pour les nouveaux feedbacks et les mises à jour importantes.
@@ -195,11 +277,7 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor="darkMode">Mode Sombre</Label>
-                <Switch
-                  id="darkMode"
-                  checked={darkModeEnabled}
-                  onCheckedChange={setDarkModeEnabled}
-                />
+                <Switch id="darkMode" checked={darkModeEnabled} onCheckedChange={setDarkModeEnabled} />
               </div>
               <p className="text-sm text-muted-foreground">
                 Activez le mode sombre pour une expérience visuelle plus agréable la nuit.
