@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Star, Send, CheckCircle, AlertCircle, Wifi, WifiOff } from 'lucide-react'
+import { Star, Send, CheckCircle, AlertCircle, Wifi, WifiOff } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Logo } from "@/components/logo"
+import { supabase } from "@/lib/supabase" // Import Supabase client
 
 interface Employee {
   id: string
@@ -18,6 +19,7 @@ interface Employee {
   position: string
   department?: string
   photo_url?: string
+  qr_code_id?: string | null // Added to fetch for scan logging
 }
 
 interface DeviceInfo {
@@ -63,19 +65,27 @@ export default function FeedbackPage() {
 
   const fetchEmployee = async (id: string) => {
     try {
-      // Simulate API call - replace with actual Supabase call
-      const mockEmployee: Employee = {
-        id: id,
-        cin_number: "AB123456",
-        full_name: "Mohammed Benali",
-        position: "Serveur",
-        department: "Restaurant",
-        photo_url: "/placeholder.svg?height=100&width=100",
+      // Fetch employee and their associated QR code ID
+      const { data, error } = await supabase
+        .from("employees")
+        .select("id, cin_number, full_name, position, department, photo_url, qr_codes(id)")
+        .eq("id", id)
+        .single()
+
+      if (error) {
+        console.error("Error fetching employee:", error)
+        setError("Employé non trouvé")
+        setEmployee(null) // Ensure employee is null on error
+        return
       }
-      setEmployee(mockEmployee)
+      setEmployee({
+        ...data,
+        qr_code_id: data.qr_codes && data.qr_codes.length > 0 ? data.qr_codes[0].id : null,
+      } as Employee)
     } catch (error) {
       console.error("Error fetching employee:", error)
       setError("Employé non trouvé")
+      setEmployee(null)
     }
   }
 
@@ -109,10 +119,21 @@ export default function FeedbackPage() {
 
     try {
       if (isOnline) {
-        // Submit directly to Supabase
+        // Submit feedback
+        const { error: feedbackError } = await supabase.from("feedbacks").insert([feedbackData])
+        if (feedbackError) throw feedbackError
+
+        // If source is QR, log the scan
+        if (source === "qr" && employee?.qr_code_id) {
+          const { error: scanError } = await supabase.from("qr_code_scans").insert([
+            {
+              qr_code_id: employee.qr_code_id,
+              device_info: getDeviceInfo(),
+            },
+          ])
+          if (scanError) console.error("Error logging QR scan:", scanError)
+        }
         console.log("Submitting feedback online:", feedbackData)
-        // Replace with actual Supabase call
-        await new Promise((resolve) => setTimeout(resolve, 1500))
       } else {
         // Store in localStorage for offline sync
         const pendingFeedbacks = JSON.parse(localStorage.getItem("pendingFeedbacks") || "[]")
@@ -123,6 +144,19 @@ export default function FeedbackPage() {
         })
         localStorage.setItem("pendingFeedbacks", JSON.stringify(pendingFeedbacks))
         console.log("Stored feedback offline:", feedbackData)
+
+        // If source is QR and offline, also store pending scan
+        if (source === "qr" && employee?.qr_code_id) {
+          const pendingScans = JSON.parse(localStorage.getItem("pendingScans") || "[]")
+          pendingScans.push({
+            qr_code_id: employee.qr_code_id,
+            device_info: getDeviceInfo(),
+            id: crypto.randomUUID(),
+            scanned_at: new Date().toISOString(),
+          })
+          localStorage.setItem("pendingScans", JSON.stringify(pendingScans))
+          console.log("Stored QR scan offline:", { qr_code_id: employee.qr_code_id, device_info: getDeviceInfo() })
+        }
       }
 
       setIsSubmitted(true)

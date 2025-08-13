@@ -1,39 +1,42 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MessageSquare, Search, Filter, Star, Users, Home, BarChart3, Settings, MoreHorizontal, Calendar, QrCode } from 'lucide-react'
+import {
+  MessageSquare,
+  Star,
+  Filter,
+  Search,
+  Users,
+  Home,
+  BarChart3,
+  Settings,
+  CalendarDays,
+  ArrowUp,
+  ArrowDown,
+  QrCode,
+} from "lucide-react"
 import { Logo } from "@/components/logo"
-import { createClient } from "@supabase/supabase-js"
+import { supabase } from "@/lib/supabase" // Use the client-side Supabase client
 import Link from "next/link"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-)
-
-interface Employee {
-  id: string
-  cin_number: string
-  full_name: string
-  position: string
-  department?: string
-  photo_url?: string
-}
 
 interface Feedback {
   id: string
   employee_id: string
   rating: number
   comment?: string
+  is_anonymous: boolean
+  device_info?: any
   created_at: string
-  source: "nfc" | "qr" | "direct"
-  device_info: any // Simplified for mock
-  employee?: Employee
+  employee?: {
+    full_name: string
+    position: string
+    department?: string
+  }
 }
 
 export default function FeedbacksPage() {
@@ -41,7 +44,8 @@ export default function FeedbacksPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [ratingFilter, setRatingFilter] = useState("all")
-  const [sourceFilter, setSourceFilter] = useState("all")
+  const [departmentFilter, setDepartmentFilter] = useState("all")
+  const [sortOrder, setSortOrder] = useState("desc") // 'asc' or 'desc'
 
   useEffect(() => {
     fetchFeedbacks()
@@ -49,90 +53,22 @@ export default function FeedbacksPage() {
 
   const fetchFeedbacks = async () => {
     try {
-      // Mock data - replace with actual Supabase query
-      const mockFeedbacks: Feedback[] = [
-        {
-          id: "f1",
-          employee_id: "1",
-          rating: 5,
-          comment: "Excellent service, très rapide et efficace !",
-          created_at: "2024-07-28T10:30:00Z",
-          source: "nfc",
-          device_info: {},
-          employee: {
-            id: "1",
-            cin_number: "AB123456",
-            full_name: "Mohammed Benali",
-            position: "Serveur",
-            department: "Restaurant",
-          },
-        },
-        {
-          id: "f2",
-          employee_id: "2",
-          rating: 4,
-          comment: "Très bien, mais un peu d'attente.",
-          created_at: "2024-07-27T15:00:00Z",
-          source: "qr",
-          device_info: {},
-          employee: {
-            id: "2",
-            cin_number: "CD789012",
-            full_name: "Sarah Khalil",
-            position: "Caissière",
-            department: "Vente",
-          },
-        },
-        {
-          id: "f3",
-          employee_id: "3",
-          rating: 2,
-          comment: "Déçu par la qualité du produit.",
-          created_at: "2024-07-26T09:45:00Z",
-          source: "direct",
-          device_info: {},
-          employee: {
-            id: "3",
-            cin_number: "EF345678",
-            full_name: "Meriem Alami",
-            position: "Conseillère",
-            department: "Service Client",
-          },
-        },
-        {
-          id: "f4",
-          employee_id: "1",
-          rating: 5,
-          comment: "Toujours au top !",
-          created_at: "2024-07-25T11:00:00Z",
-          source: "nfc",
-          device_info: {},
-          employee: {
-            id: "1",
-            cin_number: "AB123456",
-            full_name: "Mohammed Benali",
-            position: "Serveur",
-            department: "Restaurant",
-          },
-        },
-        {
-          id: "f5",
-          employee_id: "4",
-          rating: 1,
-          comment: "Expérience très négative, à améliorer.",
-          created_at: "2024-07-24T18:20:00Z",
-          source: "qr",
-          device_info: {},
-          employee: {
-            id: "4",
-            cin_number: "GH901234",
-            full_name: "Ahmed Tazi",
-            position: "Chef de Cuisine",
-            department: "Restaurant",
-          },
-        },
-      ]
-      setFeedbacks(mockFeedbacks)
+      setLoading(true)
+      const { data, error } = await supabase
+        .from("feedbacks")
+        .select(
+          `
+          *,
+          employee:employee_id (full_name, position, department)
+        `,
+        )
+        .order("created_at", { ascending: sortOrder === "asc" })
+
+      if (error) {
+        console.error("Error fetching feedbacks:", error)
+        return
+      }
+      setFeedbacks(data as Feedback[])
     } catch (error) {
       console.error("Error fetching feedbacks:", error)
     } finally {
@@ -140,34 +76,24 @@ export default function FeedbacksPage() {
     }
   }
 
+  useEffect(() => {
+    fetchFeedbacks()
+  }, [sortOrder]) // Re-fetch when sort order changes
+
+  const allDepartments = Array.from(new Set(feedbacks.map((f) => f.employee?.department).filter(Boolean)))
+
   const filteredFeedbacks = feedbacks.filter((feedback) => {
     const matchesSearch =
       feedback.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       feedback.employee?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      feedback.employee?.cin_number.toLowerCase().includes(searchTerm.toLowerCase())
+      feedback.employee?.position.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesRating = ratingFilter === "all" || feedback.rating.toString() === ratingFilter
-    const matchesSource = sourceFilter === "all" || feedback.source === sourceFilter
+    const matchesRating = ratingFilter === "all" || feedback.rating === Number.parseInt(ratingFilter)
 
-    return matchesSearch && matchesRating && matchesSource
+    const matchesDepartment = departmentFilter === "all" || feedback.employee?.department === departmentFilter
+
+    return matchesSearch && matchesRating && matchesDepartment
   })
-
-  const getRatingColor = (rating: number) => {
-    if (rating >= 4) return "bg-green-500"
-    if (rating === 3) return "bg-yellow-500"
-    return "bg-red-500"
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("fr-FR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
 
   if (loading) {
     return (
@@ -187,35 +113,53 @@ export default function FeedbacksPage() {
 
         <nav className="space-y-2">
           <Link href="/dashboard">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Home className="mr-3 h-4 w-4" />
               Dashboard
             </Button>
           </Link>
           <Link href="/dashboard/employees">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Users className="mr-3 h-4 w-4" />
               Employés
             </Button>
           </Link>
-          <Button variant="ghost" className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button
+            variant="ghost"
+            className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+          >
             <MessageSquare className="mr-3 h-4 w-4" />
             Feedbacks
           </Button>
           <Link href="/dashboard/qr-codes">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <QrCode className="mr-3 h-4 w-4" />
               QR Codes
             </Button>
           </Link>
           <Link href="/dashboard/insights">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <BarChart3 className="mr-3 h-4 w-4" />
               Insight
             </Button>
           </Link>
           <Link href="/dashboard/settings">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-primary-foreground hover:bg-sidebar-accent"
+            >
               <Settings className="mr-3 h-4 w-4" />
               Paramètres
             </Button>
@@ -229,104 +173,79 @@ export default function FeedbacksPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold">Feedbacks</h1>
-            <p className="text-muted-foreground">Consultez et analysez les feedbacks de vos clients</p>
+            <p className="text-muted-foreground">Consultez et gérez les feedbacks de vos employés</p>
           </div>
-          <Button className="bg-primary hover:bg-primary/90">
-            <Filter className="mr-2 h-4 w-4" />
-            Filtrer
-          </Button>
         </div>
 
-        {/* Filters */}
+        {/* Filters and Search */}
         <Card className="bg-card border-border mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Rechercher par commentaire ou employé..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-muted border-border text-foreground"
-                  />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="relative col-span-full md:col-span-2 lg:col-span-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher un feedback ou un employé..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-muted border-border text-foreground"
+                />
               </div>
+
               <Select value={ratingFilter} onValueChange={setRatingFilter}>
-                <SelectTrigger className="w-full sm:w-48 bg-muted border-border">
+                <SelectTrigger className="w-full bg-muted border-border">
+                  <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
                   <SelectValue placeholder="Note" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border">
                   <SelectItem value="all">Toutes les notes</SelectItem>
-                  {[5, 4, 3, 2, 1].map((rating) => (
+                  {[1, 2, 3, 4, 5].map((rating) => (
                     <SelectItem key={rating} value={rating.toString()}>
                       {rating} Étoile{rating > 1 ? "s" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                <SelectTrigger className="w-full sm:w-48 bg-muted border-border">
-                  <SelectValue placeholder="Source" />
+
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-full bg-muted border-border">
+                  <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <SelectValue placeholder="Département" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border">
-                  <SelectItem value="all">Toutes les sources</SelectItem>
-                  <SelectItem value="nfc">NFC</SelectItem>
-                  <SelectItem value="qr">QR Code</SelectItem>
-                  <SelectItem value="direct">Direct</SelectItem>
+                  <SelectItem value="all">Tous les départements</SelectItem>
+                  {allDepartments.map((dept) => (
+                    <SelectItem key={dept} value={dept!}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={sortOrder} onValueChange={setSortOrder}>
+                <SelectTrigger className="w-full bg-muted border-border">
+                  {sortOrder === "desc" ? (
+                    <ArrowDown className="mr-2 h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ArrowUp className="mr-2 h-4 w-4 text-muted-foreground" />
+                  )}
+                  <SelectValue placeholder="Trier par" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="desc">Plus récent</SelectItem>
+                  <SelectItem value="asc">Plus ancien</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* Feedback Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-muted-foreground text-sm">Total Feedbacks</p>
-                  <p className="text-3xl font-bold text-foreground">{feedbacks.length}</p>
-                </div>
-                <MessageSquare className="w-12 h-12 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-muted-foreground text-sm">Feedbacks Positifs</p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {feedbacks.filter((f) => f.rating >= 4).length}
-                  </p>
-                </div>
-                <Star className="w-12 h-12 text-green-500 fill-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-muted-foreground text-sm">Feedbacks Négatifs</p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {feedbacks.filter((f) => f.rating <= 2).length}
-                  </p>
-                </div>
-                <Star className="w-12 h-12 text-red-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Feedbacks List */}
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-foreground">Liste des Feedbacks</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              {filteredFeedbacks.length} feedbacks trouvés
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -337,21 +256,38 @@ export default function FeedbacksPage() {
                   <div key={feedback.id} className="p-4 bg-muted rounded-lg border border-border">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
-                        <Badge className={getRatingColor(feedback.rating)}>
-                          {feedback.rating} <Star className="h-3 w-3 ml-1 fill-current" />
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                          Source: {feedback.source.toUpperCase()}
-                        </Badge>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-5 w-5 ${
+                              i < feedback.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+                            }`}
+                          />
+                        ))}
+                        <span className="text-sm font-medium text-foreground">{feedback.rating}/5</span>
                       </div>
-                      <span className="text-sm text-muted-foreground">{formatDate(feedback.created_at)}</span>
+                      <Badge variant="outline" className="text-xs text-muted-foreground">
+                        <CalendarDays className="h-3 w-3 mr-1" />
+                        {new Date(feedback.created_at).toLocaleDateString()}
+                      </Badge>
                     </div>
-                    <p className="text-foreground font-medium mb-1">
-                      Employé: {feedback.employee?.full_name || "N/A"} (CIN: {feedback.employee?.cin_number || "N/A"})
-                    </p>
-                    <p className="text-muted-foreground text-sm italic">
-                      {feedback.comment || "Pas de commentaire."}
-                    </p>
+                    <p className="text-foreground mb-3">{feedback.comment || "Aucun commentaire fourni."}</p>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <div>
+                        {feedback.employee ? (
+                          <>
+                            <span className="font-semibold text-foreground">{feedback.employee.full_name}</span> (
+                            {feedback.employee.position}
+                            {feedback.employee.department && ` - ${feedback.employee.department}`})
+                          </>
+                        ) : (
+                          "Employé inconnu"
+                        )}
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {feedback.is_anonymous ? "Anonyme" : "Non anonyme"}
+                      </Badge>
+                    </div>
                   </div>
                 ))
               )}

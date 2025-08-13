@@ -267,7 +267,7 @@ export default function HomePage() {
             <Zap className="w-6 h-6 text-muted-foreground" />
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2024 ClientIn. Tous droits réservés. &bull; CEO &amp; Founder: AMAM ABIR
+            © 2025 ClientIn. Tous droits réservés. &bull; CEO &amp; Founder: AMAM ABIR
           </p>
         </div>
       </footer>
